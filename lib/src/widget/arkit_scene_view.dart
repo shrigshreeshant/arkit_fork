@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:arkit_plugin/src/arkit_node.dart';
 import 'package:arkit_plugin/src/enums/coaching_overlay_goal.dart';
 import 'package:arkit_plugin/src/geometries/material/arkit_material.dart';
+import 'package:arkit_plugin/src/hit/arkit_raycast_hit_test_result.dart';
 import 'package:arkit_plugin/src/widget/ar_environment_texturing.dart';
 import 'package:arkit_plugin/src/widget/ar_tracking_state.dart';
 import 'package:arkit_plugin/src/geometries/arkit_anchor.dart';
@@ -35,6 +36,8 @@ typedef StringResultHandler = void Function(String? text);
 typedef AnchorEventHandler = void Function(ARKitAnchor anchor);
 typedef ARKitTapResultHandler = void Function(List<String> nodes);
 typedef ARKitHitResultHandler = void Function(List<ARKitTestResult> hits);
+typedef ARKitARRaycastHitResultHandler = void Function(
+    List<ARKitRaycastHitTestResult> hits);
 typedef ARKitPanResultHandler = void Function(List<ARKitNodePanResult> pans);
 typedef ARKitRotationResultHandler = void Function(
     List<ARKitNodeRotationResult> pans);
@@ -52,6 +55,7 @@ class ARKitSceneView extends StatefulWidget {
     this.showStatistics = false,
     this.autoenablesDefaultLighting = true,
     this.enableTapRecognizer = false,
+    this.enableARRaycastTapRecognizer = false,
     this.enablePinchRecognizer = false,
     this.enablePanRecognizer = false,
     this.enableRotationRecognizer = false,
@@ -88,6 +92,11 @@ class ARKitSceneView extends StatefulWidget {
   /// Determines whether the receiver should recognize taps.
   /// The default is false.
   final bool enableTapRecognizer;
+
+  /// Determines whether the receiver should recognize ARRaycast taps.
+  /// Available on iOS 13.0 and newer.
+  /// The default is false.
+  final bool enableARRaycastTapRecognizer;
 
   /// Determines whether the receiver should recognize pinch events.
   /// The default is false.
@@ -188,6 +197,7 @@ class _ARKitSceneViewState extends State<ARKitSceneView> {
       widget.showStatistics,
       widget.autoenablesDefaultLighting,
       widget.enableTapRecognizer,
+      widget.enableARRaycastTapRecognizer,
       widget.showFeaturePoints,
       widget.showWorldOrigin,
       widget.enablePinchRecognizer,
@@ -218,6 +228,7 @@ class ARKitController {
     bool showStatistics,
     bool autoenablesDefaultLighting,
     bool enableTapRecognizer,
+    bool enableARRaycastTapRecognizer,
     bool showFeaturePoints,
     bool showWorldOrigin,
     bool enablePinchRecognizer,
@@ -241,6 +252,7 @@ class ARKitController {
       'showStatistics': showStatistics,
       'autoenablesDefaultLighting': autoenablesDefaultLighting,
       'enableTapRecognizer': enableTapRecognizer,
+      'enableARRaycastTapRecognizer': enableARRaycastTapRecognizer,
       'enablePinchRecognizer': enablePinchRecognizer,
       'enablePanRecognizer': enablePanRecognizer,
       'enableRotationRecognizer': enableRotationRecognizer,
@@ -278,6 +290,7 @@ class ARKitController {
 
   ARKitTapResultHandler? onNodeTap;
   ARKitHitResultHandler? onARTap;
+  ARKitARRaycastHitResultHandler? onARRaycastTap;
   ARKitPinchGestureHandler? onNodePinch;
   ARKitPanResultHandler? onNodePan;
   ARKitRotationResultHandler? onNodeRotation;
@@ -363,6 +376,26 @@ class ARKitController {
     } else {
       final map = results.map((e) => Map<String, dynamic>.from(e));
       final objects = map.map((e) => ARKitTestResult.fromJson(e)).toList();
+      return objects;
+    }
+  }
+
+  /// Perform ARRaycast Hit Test
+  /// defaults to center of the screen.
+  /// x and y values are between 0 and 1
+  Future<List<ARKitRaycastHitTestResult>> performARRaycastHitTest(
+      {required double x, required double y}) async {
+    assert(x > 0 && y > 0);
+    final results = await _channel.invokeListMethod('performARRaycastHitTest', {
+      'x': x,
+      'y': y,
+    });
+    if (results == null) {
+      return [];
+    } else {
+      final map = results.map((e) => Map<String, dynamic>.from(e));
+      final objects =
+          map.map((e) => ARKitRaycastHitTestResult.fromJson(e)).toList();
       return objects;
     }
   }
@@ -483,6 +516,16 @@ class ARKitController {
               return ARKitTestResult.fromJson(e);
             }).toList();
             onARTap!(map2);
+          }
+          break;
+        case 'onARRaycastTap':
+          if (onARRaycastTap != null) {
+            print("onARRaycastTap");
+            final input = call.arguments as List<dynamic>;
+            final map = input.map((e) => Map<String, dynamic>.from(e)).toList();
+            final objects =
+                map.map((e) => ARKitRaycastHitTestResult.fromJson(e)).toList();
+            onARRaycastTap!(objects);
           }
           break;
         case 'onNodePinch':

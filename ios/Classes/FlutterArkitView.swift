@@ -71,6 +71,8 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             result(nil)
         case "performHitTest":
             onPerformHitTest(arguments!, result)
+        case "performARRaycastHitTest":
+            onPerformARRaycastHitTest(arguments!, result)
         case "updateFaceGeometry":
             onUpdateFaceGeometry(arguments!)
             result(nil)

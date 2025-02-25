@@ -29,6 +29,7 @@ export 'package:arkit_plugin/src/geometries/material/arkit_material.dart';
 export 'package:arkit_plugin/src/geometries/material/arkit_material_property.dart';
 export 'package:arkit_plugin/src/geometries/material/arkit_transparency_mode.dart';
 export 'package:arkit_plugin/src/hit/arkit_hit_test_result.dart';
+export 'package:arkit_plugin/src/hit/arkit_raycast_hit_test_result.dart';
 export 'package:arkit_plugin/src/hit/arkit_hit_test_result_type.dart';
 export 'package:arkit_plugin/src/hit/arkit_node_pan_result.dart';
 export 'package:arkit_plugin/src/hit/arkit_node_pinch_result.dart';

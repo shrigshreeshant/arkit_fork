@@ -53,14 +53,13 @@ class _RealTimeUpdatesPageState extends State<RealTimeUpdatesPage> {
     this.arkitController.updateAtTime = (time) {
       if (busy == false) {
         busy = true;
-        this.arkitController.performHitTest(x: 0.25, y: 0.75).then((results) {
+        this.arkitController.performARRaycastHitTest(x: 0.25, y: 0.75).then((results) {
           if (results.isNotEmpty) {
-            final point = results.firstWhereOrNull(
-              (o) => o.type == ARKitHitTestResultType.featurePoint,
-            );
-            if (point == null) {
+
+            if (results.isEmpty) {
               return;
             }
+            final point = results.first;
             final position = vector.Vector3(
               point.worldTransform.getColumn(3).x,
               point.worldTransform.getColumn(3).y,

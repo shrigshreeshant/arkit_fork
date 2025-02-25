@@ -14,18 +14,10 @@ ARKitText _$ARKitTextFromJson(Map json) => ARKitText(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitTextToJson(ARKitText instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['text'] = const StringValueNotifierConverter().toJson(instance.text);
-  val['extrusionDepth'] = instance.extrusionDepth;
-  return val;
-}
+Map<String, dynamic> _$ARKitTextToJson(ARKitText instance) => <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'text': const StringValueNotifierConverter().toJson(instance.text),
+      'extrusionDepth': instance.extrusionDepth,
+    };

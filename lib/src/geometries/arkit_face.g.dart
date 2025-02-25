@@ -12,16 +12,8 @@ ARKitFace _$ARKitFaceFromJson(Map json) => ARKitFace(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitFaceToJson(ARKitFace instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  return val;
-}
+Map<String, dynamic> _$ARKitFaceToJson(ARKitFace instance) => <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+    };

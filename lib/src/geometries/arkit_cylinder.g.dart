@@ -14,18 +14,11 @@ ARKitCylinder _$ARKitCylinderFromJson(Map json) => ARKitCylinder(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitCylinderToJson(ARKitCylinder instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['height'] = const DoubleValueNotifierConverter().toJson(instance.height);
-  val['radius'] = const DoubleValueNotifierConverter().toJson(instance.radius);
-  return val;
-}
+Map<String, dynamic> _$ARKitCylinderToJson(ARKitCylinder instance) =>
+    <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'height': const DoubleValueNotifierConverter().toJson(instance.height),
+      'radius': const DoubleValueNotifierConverter().toJson(instance.radius),
+    };

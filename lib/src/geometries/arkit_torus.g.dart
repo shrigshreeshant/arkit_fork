@@ -14,20 +14,13 @@ ARKitTorus _$ARKitTorusFromJson(Map json) => ARKitTorus(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitTorusToJson(ARKitTorus instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['ringRadius'] =
-      const DoubleValueNotifierConverter().toJson(instance.ringRadius);
-  val['pipeRadius'] =
-      const DoubleValueNotifierConverter().toJson(instance.pipeRadius);
-  return val;
-}
+Map<String, dynamic> _$ARKitTorusToJson(ARKitTorus instance) =>
+    <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'ringRadius':
+          const DoubleValueNotifierConverter().toJson(instance.ringRadius),
+      'pipeRadius':
+          const DoubleValueNotifierConverter().toJson(instance.pipeRadius),
+    };

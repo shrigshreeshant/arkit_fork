@@ -13,16 +13,8 @@ ARKitNodePinchResult _$ARKitNodePinchResultFromJson(Map json) =>
     );
 
 Map<String, dynamic> _$ARKitNodePinchResultToJson(
-    ARKitNodePinchResult instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('nodeName', instance.nodeName);
-  val['scale'] = instance.scale;
-  return val;
-}
+        ARKitNodePinchResult instance) =>
+    <String, dynamic>{
+      if (instance.nodeName case final value?) 'nodeName': value,
+      'scale': instance.scale,
+    };

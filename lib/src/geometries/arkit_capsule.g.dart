@@ -14,19 +14,12 @@ ARKitCapsule _$ARKitCapsuleFromJson(Map json) => ARKitCapsule(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitCapsuleToJson(ARKitCapsule instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['capRadius'] =
-      const DoubleValueNotifierConverter().toJson(instance.capRadius);
-  val['height'] = const DoubleValueNotifierConverter().toJson(instance.height);
-  return val;
-}
+Map<String, dynamic> _$ARKitCapsuleToJson(ARKitCapsule instance) =>
+    <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'capRadius':
+          const DoubleValueNotifierConverter().toJson(instance.capRadius),
+      'height': const DoubleValueNotifierConverter().toJson(instance.height),
+    };

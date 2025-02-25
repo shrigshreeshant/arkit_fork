@@ -21,22 +21,15 @@ ARKitLight _$ARKitLightFromJson(Map json) => ARKitLight(
       spotOuterAngle: (json['spotOuterAngle'] as num?)?.toDouble() ?? 45,
     );
 
-Map<String, dynamic> _$ARKitLightToJson(ARKitLight instance) {
-  final val = <String, dynamic>{
-    'type': const ARKitLightTypeConverter().toJson(instance.type),
-  };
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('color', const NullableColorConverter().toJson(instance.color));
-  val['temperature'] = instance.temperature;
-  val['intensity'] =
-      const DoubleValueNotifierConverter().toJson(instance.intensity);
-  val['spotInnerAngle'] = instance.spotInnerAngle;
-  val['spotOuterAngle'] = instance.spotOuterAngle;
-  return val;
-}
+Map<String, dynamic> _$ARKitLightToJson(ARKitLight instance) =>
+    <String, dynamic>{
+      'type': const ARKitLightTypeConverter().toJson(instance.type),
+      if (const NullableColorConverter().toJson(instance.color)
+          case final value?)
+        'color': value,
+      'temperature': instance.temperature,
+      'intensity':
+          const DoubleValueNotifierConverter().toJson(instance.intensity),
+      'spotInnerAngle': instance.spotInnerAngle,
+      'spotOuterAngle': instance.spotOuterAngle,
+    };

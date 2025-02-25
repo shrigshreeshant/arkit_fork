@@ -13,21 +13,13 @@ ARKitUnkownAnchor _$ARKitUnkownAnchorFromJson(Map json) => ARKitUnkownAnchor(
       const MatrixConverter().fromJson(json['transform'] as List),
     );
 
-Map<String, dynamic> _$ARKitUnkownAnchorToJson(ARKitUnkownAnchor instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('nodeName', instance.nodeName);
-  val['identifier'] = instance.identifier;
-  val['transform'] = const MatrixConverter().toJson(instance.transform);
-  val['anchorType'] = instance.anchorType;
-  return val;
-}
+Map<String, dynamic> _$ARKitUnkownAnchorToJson(ARKitUnkownAnchor instance) =>
+    <String, dynamic>{
+      if (instance.nodeName case final value?) 'nodeName': value,
+      'identifier': instance.identifier,
+      'transform': const MatrixConverter().toJson(instance.transform),
+      'anchorType': instance.anchorType,
+    };
 
 ARKitPlaneAnchor _$ARKitPlaneAnchorFromJson(Map json) => ARKitPlaneAnchor(
       const Vector3Converter().fromJson(json['center'] as List),
@@ -37,22 +29,14 @@ ARKitPlaneAnchor _$ARKitPlaneAnchorFromJson(Map json) => ARKitPlaneAnchor(
       const MatrixConverter().fromJson(json['transform'] as List),
     );
 
-Map<String, dynamic> _$ARKitPlaneAnchorToJson(ARKitPlaneAnchor instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('nodeName', instance.nodeName);
-  val['identifier'] = instance.identifier;
-  val['transform'] = const MatrixConverter().toJson(instance.transform);
-  val['center'] = const Vector3Converter().toJson(instance.center);
-  val['extent'] = const Vector3Converter().toJson(instance.extent);
-  return val;
-}
+Map<String, dynamic> _$ARKitPlaneAnchorToJson(ARKitPlaneAnchor instance) =>
+    <String, dynamic>{
+      if (instance.nodeName case final value?) 'nodeName': value,
+      'identifier': instance.identifier,
+      'transform': const MatrixConverter().toJson(instance.transform),
+      'center': const Vector3Converter().toJson(instance.center),
+      'extent': const Vector3Converter().toJson(instance.extent),
+    };
 
 ARKitImageAnchor _$ARKitImageAnchorFromJson(Map json) => ARKitImageAnchor(
       json['referenceImageName'] as String?,
@@ -64,24 +48,17 @@ ARKitImageAnchor _$ARKitImageAnchorFromJson(Map json) => ARKitImageAnchor(
       const MatrixConverter().fromJson(json['transform'] as List),
     );
 
-Map<String, dynamic> _$ARKitImageAnchorToJson(ARKitImageAnchor instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('nodeName', instance.nodeName);
-  val['identifier'] = instance.identifier;
-  val['transform'] = const MatrixConverter().toJson(instance.transform);
-  writeNotNull('referenceImageName', instance.referenceImageName);
-  val['referenceImagePhysicalSize'] =
-      const Vector2Converter().toJson(instance.referenceImagePhysicalSize);
-  val['isTracked'] = instance.isTracked;
-  return val;
-}
+Map<String, dynamic> _$ARKitImageAnchorToJson(ARKitImageAnchor instance) =>
+    <String, dynamic>{
+      if (instance.nodeName case final value?) 'nodeName': value,
+      'identifier': instance.identifier,
+      'transform': const MatrixConverter().toJson(instance.transform),
+      if (instance.referenceImageName case final value?)
+        'referenceImageName': value,
+      'referenceImagePhysicalSize':
+          const Vector2Converter().toJson(instance.referenceImagePhysicalSize),
+      'isTracked': instance.isTracked,
+    };
 
 ARKitFaceAnchor _$ARKitFaceAnchorFromJson(Map json) => ARKitFaceAnchor(
       ARKitFace.fromJson(json['geometry'] as Map),
@@ -97,29 +74,21 @@ ARKitFaceAnchor _$ARKitFaceAnchorFromJson(Map json) => ARKitFaceAnchor(
       const Vector3ListConverter().fromJson(json['geometryVertices'] as List),
     );
 
-Map<String, dynamic> _$ARKitFaceAnchorToJson(ARKitFaceAnchor instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('nodeName', instance.nodeName);
-  val['identifier'] = instance.identifier;
-  val['transform'] = const MatrixConverter().toJson(instance.transform);
-  val['geometry'] = instance.geometry;
-  val['leftEyeTransform'] =
-      const MatrixConverter().toJson(instance.leftEyeTransform);
-  val['rightEyeTransform'] =
-      const MatrixConverter().toJson(instance.rightEyeTransform);
-  val['geometryVertices'] =
-      const Vector3ListConverter().toJson(instance.geometryVertices);
-  val['blendShapes'] = instance.blendShapes;
-  val['isTracked'] = instance.isTracked;
-  return val;
-}
+Map<String, dynamic> _$ARKitFaceAnchorToJson(ARKitFaceAnchor instance) =>
+    <String, dynamic>{
+      if (instance.nodeName case final value?) 'nodeName': value,
+      'identifier': instance.identifier,
+      'transform': const MatrixConverter().toJson(instance.transform),
+      'geometry': instance.geometry,
+      'leftEyeTransform':
+          const MatrixConverter().toJson(instance.leftEyeTransform),
+      'rightEyeTransform':
+          const MatrixConverter().toJson(instance.rightEyeTransform),
+      'geometryVertices':
+          const Vector3ListConverter().toJson(instance.geometryVertices),
+      'blendShapes': instance.blendShapes,
+      'isTracked': instance.isTracked,
+    };
 
 ARKitBodyAnchor _$ARKitBodyAnchorFromJson(Map json) => ARKitBodyAnchor(
       ARKitSkeleton.fromJson(json['skeleton'] as Map),
@@ -129,19 +98,11 @@ ARKitBodyAnchor _$ARKitBodyAnchorFromJson(Map json) => ARKitBodyAnchor(
       const MatrixConverter().fromJson(json['transform'] as List),
     );
 
-Map<String, dynamic> _$ARKitBodyAnchorToJson(ARKitBodyAnchor instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('nodeName', instance.nodeName);
-  val['identifier'] = instance.identifier;
-  val['transform'] = const MatrixConverter().toJson(instance.transform);
-  val['skeleton'] = instance.skeleton;
-  val['isTracked'] = instance.isTracked;
-  return val;
-}
+Map<String, dynamic> _$ARKitBodyAnchorToJson(ARKitBodyAnchor instance) =>
+    <String, dynamic>{
+      if (instance.nodeName case final value?) 'nodeName': value,
+      'identifier': instance.identifier,
+      'transform': const MatrixConverter().toJson(instance.transform),
+      'skeleton': instance.skeleton,
+      'isTracked': instance.isTracked,
+    };

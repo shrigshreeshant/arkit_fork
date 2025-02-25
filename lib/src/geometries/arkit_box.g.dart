@@ -16,20 +16,12 @@ ARKitBox _$ARKitBoxFromJson(Map json) => ARKitBox(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitBoxToJson(ARKitBox instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['width'] = const DoubleValueNotifierConverter().toJson(instance.width);
-  val['height'] = const DoubleValueNotifierConverter().toJson(instance.height);
-  val['length'] = const DoubleValueNotifierConverter().toJson(instance.length);
-  val['chamferRadius'] = instance.chamferRadius;
-  return val;
-}
+Map<String, dynamic> _$ARKitBoxToJson(ARKitBox instance) => <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'width': const DoubleValueNotifierConverter().toJson(instance.width),
+      'height': const DoubleValueNotifierConverter().toJson(instance.height),
+      'length': const DoubleValueNotifierConverter().toJson(instance.length),
+      'chamferRadius': instance.chamferRadius,
+    };

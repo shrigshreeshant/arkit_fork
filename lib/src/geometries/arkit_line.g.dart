@@ -14,18 +14,10 @@ ARKitLine _$ARKitLineFromJson(Map json) => ARKitLine(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitLineToJson(ARKitLine instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['fromVector'] = const Vector3Converter().toJson(instance.fromVector);
-  val['toVector'] = const Vector3Converter().toJson(instance.toVector);
-  return val;
-}
+Map<String, dynamic> _$ARKitLineToJson(ARKitLine instance) => <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'fromVector': const Vector3Converter().toJson(instance.fromVector),
+      'toVector': const Vector3Converter().toJson(instance.toVector),
+    };

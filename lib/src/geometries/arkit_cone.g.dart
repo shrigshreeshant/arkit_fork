@@ -15,21 +15,13 @@ ARKitCone _$ARKitConeFromJson(Map json) => ARKitCone(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitConeToJson(ARKitCone instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['height'] = const DoubleValueNotifierConverter().toJson(instance.height);
-  val['topRadius'] =
-      const DoubleValueNotifierConverter().toJson(instance.topRadius);
-  val['bottomRadius'] =
-      const DoubleValueNotifierConverter().toJson(instance.bottomRadius);
-  return val;
-}
+Map<String, dynamic> _$ARKitConeToJson(ARKitCone instance) => <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'height': const DoubleValueNotifierConverter().toJson(instance.height),
+      'topRadius':
+          const DoubleValueNotifierConverter().toJson(instance.topRadius),
+      'bottomRadius':
+          const DoubleValueNotifierConverter().toJson(instance.bottomRadius),
+    };

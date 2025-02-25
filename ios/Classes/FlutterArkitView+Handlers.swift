@@ -168,6 +168,20 @@ extension FlutterArkitView {
         result(arHitResults)
     }
 
+    func onPerformARRaycastHitTest(_ arguments: [String: Any], _ result: FlutterResult) {
+        guard let x = arguments["x"] as? Double,
+              let y = arguments["y"] as? Double
+        else {
+            logPluginError("deserialization failed", toChannel: channel)
+            result(nil)
+            return
+        }
+        let viewWidth = sceneView.bounds.size.width
+        let viewHeight = sceneView.bounds.size.height
+        let location = CGPoint(x: viewWidth * CGFloat(x), y: viewHeight * CGFloat(y))
+        let arHitResults = getARRaycastResultsArray(sceneView, atLocation: location)
+        result(arHitResults)
+    }
     func onGetLightEstimate(_ result: FlutterResult) {
         let frame = sceneView.session.currentFrame
         if let lightEstimate = frame?.lightEstimate {

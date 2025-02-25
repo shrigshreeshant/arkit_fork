@@ -41,19 +41,11 @@ ARKitMaterialVideo _$ARKitMaterialVideoFromJson(Map json) => ARKitMaterialVideo(
       url: json['url'] as String?,
     );
 
-Map<String, dynamic> _$ARKitMaterialVideoToJson(ARKitMaterialVideo instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('filename', instance.filename);
-  writeNotNull('url', instance.url);
-  val['width'] = instance.width;
-  val['height'] = instance.height;
-  val['autoplay'] = instance.autoplay;
-  return val;
-}
+Map<String, dynamic> _$ARKitMaterialVideoToJson(ARKitMaterialVideo instance) =>
+    <String, dynamic>{
+      if (instance.filename case final value?) 'filename': value,
+      if (instance.url case final value?) 'url': value,
+      'width': instance.width,
+      'height': instance.height,
+      'autoplay': instance.autoplay,
+    };

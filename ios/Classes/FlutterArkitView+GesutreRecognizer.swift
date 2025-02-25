@@ -14,6 +14,15 @@ extension FlutterArkitView: UIGestureRecognizerDelegate {
             }
         }
 
+        if let enableARRaycastTap = arguments["enableARRaycastTapRecognizer"] as? Bool {
+            if enableARRaycastTap {
+                print("enabled ARRaycast Tap")
+                let arRaycastTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleARRaycast(_:)))
+                arRaycastTapGestureRecognizer.delegate = self
+                sceneView.gestureRecognizers?.append(arRaycastTapGestureRecognizer)
+            }
+        }
+
         if let enablePinch = arguments["enablePinchRecognizer"] as? Bool {
             if enablePinch {
                 let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
@@ -74,6 +83,22 @@ extension FlutterArkitView: UIGestureRecognizerDelegate {
         let arHitResults = getARHitResultsArray(sceneView, atLocation: touchLocation)
         if !arHitResults.isEmpty {
             sendToFlutter("onARTap", arguments: arHitResults)
+        }
+    }
+
+    @objc func handleARRaycast(_ recognizer: UITapGestureRecognizer) {
+        print("handle AR Raycast Tap")
+        guard let sceneView = recognizer.view as? ARSCNView else {
+            print("handle AR Raycast Tap Error")
+            return
+        }
+        print("handle AR Raycast Tap 2")
+        let touchLocation = recognizer.location(in: sceneView)
+        print("handle AR Raycast Tap 3 location: \(touchLocation)")
+        let arHitResults = getARRaycastResultsArray(sceneView, atLocation: touchLocation)
+        print("handle AR Raycast Tap 4 \(arHitResults.count)")
+        if !arHitResults.isEmpty {
+            sendToFlutter("onARRaycastTap", arguments: arHitResults)
         }
     }
 

@@ -15,21 +15,13 @@ ARKitTube _$ARKitTubeFromJson(Map json) => ARKitTube(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitTubeToJson(ARKitTube instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['height'] = const DoubleValueNotifierConverter().toJson(instance.height);
-  val['innerRadius'] =
-      const DoubleValueNotifierConverter().toJson(instance.innerRadius);
-  val['outerRadius'] =
-      const DoubleValueNotifierConverter().toJson(instance.outerRadius);
-  return val;
-}
+Map<String, dynamic> _$ARKitTubeToJson(ARKitTube instance) => <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'height': const DoubleValueNotifierConverter().toJson(instance.height),
+      'innerRadius':
+          const DoubleValueNotifierConverter().toJson(instance.innerRadius),
+      'outerRadius':
+          const DoubleValueNotifierConverter().toJson(instance.outerRadius),
+    };

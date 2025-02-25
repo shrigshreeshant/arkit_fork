@@ -16,20 +16,13 @@ ARKitPlane _$ARKitPlaneFromJson(Map json) => ARKitPlane(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitPlaneToJson(ARKitPlane instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['width'] = const DoubleValueNotifierConverter().toJson(instance.width);
-  val['height'] = const DoubleValueNotifierConverter().toJson(instance.height);
-  val['widthSegmentCount'] = instance.widthSegmentCount;
-  val['heightSegmentCount'] = instance.heightSegmentCount;
-  return val;
-}
+Map<String, dynamic> _$ARKitPlaneToJson(ARKitPlane instance) =>
+    <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'width': const DoubleValueNotifierConverter().toJson(instance.width),
+      'height': const DoubleValueNotifierConverter().toJson(instance.height),
+      'widthSegmentCount': instance.widthSegmentCount,
+      'heightSegmentCount': instance.heightSegmentCount,
+    };

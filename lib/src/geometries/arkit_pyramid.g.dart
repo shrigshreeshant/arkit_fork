@@ -15,19 +15,12 @@ ARKitPyramid _$ARKitPyramidFromJson(Map json) => ARKitPyramid(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitPyramidToJson(ARKitPyramid instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['height'] = const DoubleValueNotifierConverter().toJson(instance.height);
-  val['width'] = const DoubleValueNotifierConverter().toJson(instance.width);
-  val['length'] = const DoubleValueNotifierConverter().toJson(instance.length);
-  return val;
-}
+Map<String, dynamic> _$ARKitPyramidToJson(ARKitPyramid instance) =>
+    <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'height': const DoubleValueNotifierConverter().toJson(instance.height),
+      'width': const DoubleValueNotifierConverter().toJson(instance.width),
+      'length': const DoubleValueNotifierConverter().toJson(instance.length),
+    };

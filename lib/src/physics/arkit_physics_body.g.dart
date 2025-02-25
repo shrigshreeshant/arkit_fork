@@ -14,22 +14,14 @@ ARKitPhysicsBody _$ARKitPhysicsBodyFromJson(Map json) => ARKitPhysicsBody(
       categoryBitMask: (json['categoryBitMask'] as num?)?.toInt(),
     );
 
-Map<String, dynamic> _$ARKitPhysicsBodyToJson(ARKitPhysicsBody instance) {
-  final val = <String, dynamic>{
-    'type': const ARKitPhysicsBodyTypeConverter().toJson(instance.type),
-  };
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull(
-      'shape', const ARKitPhysicsShapeConverter().toJson(instance.shape));
-  writeNotNull('categoryBitMask', instance.categoryBitMask);
-  return val;
-}
+Map<String, dynamic> _$ARKitPhysicsBodyToJson(ARKitPhysicsBody instance) =>
+    <String, dynamic>{
+      'type': const ARKitPhysicsBodyTypeConverter().toJson(instance.type),
+      if (const ARKitPhysicsShapeConverter().toJson(instance.shape)
+          case final value?)
+        'shape': value,
+      if (instance.categoryBitMask case final value?) 'categoryBitMask': value,
+    };
 
 Value? _$JsonConverterFromJson<Json, Value>(
   Object? json,

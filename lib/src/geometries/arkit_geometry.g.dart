@@ -11,15 +11,8 @@ ARKitUnkownGeometry _$ARKitUnkownGeometryFromJson(Map json) =>
       json['geometryType'] as String?,
     );
 
-Map<String, dynamic> _$ARKitUnkownGeometryToJson(ARKitUnkownGeometry instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('geometryType', instance.geometryType);
-  return val;
-}
+Map<String, dynamic> _$ARKitUnkownGeometryToJson(
+        ARKitUnkownGeometry instance) =>
+    <String, dynamic>{
+      if (instance.geometryType case final value?) 'geometryType': value,
+    };

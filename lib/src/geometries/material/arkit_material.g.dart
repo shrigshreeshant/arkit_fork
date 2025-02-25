@@ -64,57 +64,73 @@ ARKitMaterial _$ARKitMaterialFromJson(Map json) => ARKitMaterial(
               .fromJson((json['blendMode'] as num?)?.toInt()),
     );
 
-Map<String, dynamic> _$ARKitMaterialToJson(ARKitMaterial instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('diffuse',
-      const ARKitMaterialPropertyConverter().toJson(instance.diffuse));
-  writeNotNull('ambient',
-      const ARKitMaterialPropertyConverter().toJson(instance.ambient));
-  writeNotNull('specular',
-      const ARKitMaterialPropertyConverter().toJson(instance.specular));
-  writeNotNull('emission',
-      const ARKitMaterialPropertyConverter().toJson(instance.emission));
-  writeNotNull('transparent',
-      const ARKitMaterialPropertyConverter().toJson(instance.transparent));
-  writeNotNull('reflective',
-      const ARKitMaterialPropertyConverter().toJson(instance.reflective));
-  writeNotNull('multiply',
-      const ARKitMaterialPropertyConverter().toJson(instance.multiply));
-  writeNotNull(
-      'normal', const ARKitMaterialPropertyConverter().toJson(instance.normal));
-  writeNotNull('displacement',
-      const ARKitMaterialPropertyConverter().toJson(instance.displacement));
-  writeNotNull('ambientOcclusion',
-      const ARKitMaterialPropertyConverter().toJson(instance.ambientOcclusion));
-  writeNotNull('selfIllumination',
-      const ARKitMaterialPropertyConverter().toJson(instance.selfIllumination));
-  writeNotNull('metalness',
-      const ARKitMaterialPropertyConverter().toJson(instance.metalness));
-  writeNotNull('roughness',
-      const ARKitMaterialPropertyConverter().toJson(instance.roughness));
-  writeNotNull('shininess', instance.shininess);
-  writeNotNull('transparency', instance.transparency);
-  writeNotNull('lightingModelName',
-      const ARKitLightingModelConverter().toJson(instance.lightingModelName));
-  writeNotNull(
-      'fillMode', const ARKitFillModeConverter().toJson(instance.fillMode));
-  writeNotNull(
-      'cullMode', const ARKitCullModeConverter().toJson(instance.cullMode));
-  writeNotNull('transparencyMode',
-      const ARKitTransparencyModeConverter().toJson(instance.transparencyMode));
-  writeNotNull('locksAmbientWithDiffuse', instance.locksAmbientWithDiffuse);
-  writeNotNull('writesToDepthBuffer', instance.writesToDepthBuffer);
-  writeNotNull('colorBufferWriteMask',
-      const ARKitColorMaskConverter().toJson(instance.colorBufferWriteMask));
-  writeNotNull(
-      'blendMode', const ARKitBlendModeConverter().toJson(instance.blendMode));
-  writeNotNull('doubleSided', instance.doubleSided);
-  return val;
-}
+Map<String, dynamic> _$ARKitMaterialToJson(ARKitMaterial instance) =>
+    <String, dynamic>{
+      if (const ARKitMaterialPropertyConverter().toJson(instance.diffuse)
+          case final value?)
+        'diffuse': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.ambient)
+          case final value?)
+        'ambient': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.specular)
+          case final value?)
+        'specular': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.emission)
+          case final value?)
+        'emission': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.transparent)
+          case final value?)
+        'transparent': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.reflective)
+          case final value?)
+        'reflective': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.multiply)
+          case final value?)
+        'multiply': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.normal)
+          case final value?)
+        'normal': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.displacement)
+          case final value?)
+        'displacement': value,
+      if (const ARKitMaterialPropertyConverter()
+              .toJson(instance.ambientOcclusion)
+          case final value?)
+        'ambientOcclusion': value,
+      if (const ARKitMaterialPropertyConverter()
+              .toJson(instance.selfIllumination)
+          case final value?)
+        'selfIllumination': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.metalness)
+          case final value?)
+        'metalness': value,
+      if (const ARKitMaterialPropertyConverter().toJson(instance.roughness)
+          case final value?)
+        'roughness': value,
+      if (instance.shininess case final value?) 'shininess': value,
+      if (instance.transparency case final value?) 'transparency': value,
+      if (const ARKitLightingModelConverter().toJson(instance.lightingModelName)
+          case final value?)
+        'lightingModelName': value,
+      if (const ARKitFillModeConverter().toJson(instance.fillMode)
+          case final value?)
+        'fillMode': value,
+      if (const ARKitCullModeConverter().toJson(instance.cullMode)
+          case final value?)
+        'cullMode': value,
+      if (const ARKitTransparencyModeConverter()
+              .toJson(instance.transparencyMode)
+          case final value?)
+        'transparencyMode': value,
+      if (instance.locksAmbientWithDiffuse case final value?)
+        'locksAmbientWithDiffuse': value,
+      if (instance.writesToDepthBuffer case final value?)
+        'writesToDepthBuffer': value,
+      if (const ARKitColorMaskConverter().toJson(instance.colorBufferWriteMask)
+          case final value?)
+        'colorBufferWriteMask': value,
+      if (const ARKitBlendModeConverter().toJson(instance.blendMode)
+          case final value?)
+        'blendMode': value,
+      if (instance.doubleSided case final value?) 'doubleSided': value,
+    };

@@ -13,17 +13,10 @@ ARKitSphere _$ARKitSphereFromJson(Map json) => ARKitSphere(
           .toList(),
     );
 
-Map<String, dynamic> _$ARKitSphereToJson(ARKitSphere instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('materials',
-      const ListMaterialsValueNotifierConverter().toJson(instance.materials));
-  val['radius'] = const DoubleValueNotifierConverter().toJson(instance.radius);
-  return val;
-}
+Map<String, dynamic> _$ARKitSphereToJson(ARKitSphere instance) =>
+    <String, dynamic>{
+      if (const ListMaterialsValueNotifierConverter().toJson(instance.materials)
+          case final value?)
+        'materials': value,
+      'radius': const DoubleValueNotifierConverter().toJson(instance.radius),
+    };

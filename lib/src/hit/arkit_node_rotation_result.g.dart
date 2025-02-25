@@ -13,16 +13,8 @@ ARKitNodeRotationResult _$ARKitNodeRotationResultFromJson(Map json) =>
     );
 
 Map<String, dynamic> _$ARKitNodeRotationResultToJson(
-    ARKitNodeRotationResult instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('nodeName', instance.nodeName);
-  val['rotation'] = instance.rotation;
-  return val;
-}
+        ARKitNodeRotationResult instance) =>
+    <String, dynamic>{
+      if (instance.nodeName case final value?) 'nodeName': value,
+      'rotation': instance.rotation,
+    };

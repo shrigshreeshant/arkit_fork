@@ -25,24 +25,25 @@ class _MeasurePageState extends State<MeasurePage> {
       ),
       body: Container(
         child: ARKitSceneView(
-          enableTapRecognizer: true,
+          // enableTapRecognizer: true,
+          showFeaturePoints: true,
           onARKitViewCreated: onARKitViewCreated,
+          enableARRaycastTapRecognizer: true,
         ),
       ));
 
   void onARKitViewCreated(ARKitController arkitController) {
     this.arkitController = arkitController;
-    this.arkitController.onARTap = (ar) {
-      final point = ar.firstWhereOrNull(
-        (o) => o.type == ARKitHitTestResultType.featurePoint,
-      );
-      if (point != null) {
-        _onARTapHandler(point);
+    this.arkitController.onARRaycastTap = (ar) {
+      print("Tapped ${ar.length} times");
+      if (ar.isNotEmpty) {
+        _onARTapHandler(ar.first);
       }
     };
+    // };
   }
 
-  void _onARTapHandler(ARKitTestResult point) {
+  void _onARTapHandler(ARKitRaycastHitTestResult point) {
     final position = vector.Vector3(
       point.worldTransform.getColumn(3).x,
       point.worldTransform.getColumn(3).y,
