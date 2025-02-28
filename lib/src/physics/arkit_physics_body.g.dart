@@ -18,7 +18,7 @@ Map<String, dynamic> _$ARKitPhysicsBodyToJson(ARKitPhysicsBody instance) =>
     <String, dynamic>{
       'type': const ARKitPhysicsBodyTypeConverter().toJson(instance.type),
       if (const ARKitPhysicsShapeConverter().toJson(instance.shape)
-          case final value?)
+          case final value)
         'shape': value,
       if (instance.categoryBitMask case final value?) 'categoryBitMask': value,
     };

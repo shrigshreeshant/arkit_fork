@@ -182,6 +182,8 @@ extension FlutterArkitView {
         let arHitResults = getARRaycastResultsArray(sceneView, atLocation: location)
         result(arHitResults)
     }
+    
+    
     func onGetLightEstimate(_ result: FlutterResult) {
         let frame = sceneView.session.currentFrame
         if let lightEstimate = frame?.lightEstimate {
@@ -207,6 +209,15 @@ extension FlutterArkitView {
     func onCameraProjectionMatrix(_ result: FlutterResult) {
         if let frame = sceneView.session.currentFrame {
             let matrix = serializeMatrix(frame.camera.projectionMatrix)
+            result(matrix)
+        } else {
+            result(nil)
+        }
+    }
+    
+    func onCameraViewMatrix(_ result: FlutterResult) {
+        if let frame = sceneView.session.currentFrame {
+            let matrix = serializeMatrix(frame.camera.viewMatrix)
             result(matrix)
         } else {
             result(nil)
