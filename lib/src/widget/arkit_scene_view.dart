@@ -385,7 +385,7 @@ class ARKitController {
   /// x and y values are between 0 and 1
   Future<List<ARKitRaycastHitTestResult>> performARRaycastHitTest(
       {required double x, required double y}) async {
-    assert(x > 0 && y > 0);
+    // assert(x > 0 && y > 0);
     final results = await _channel.invokeListMethod('performARRaycastHitTest', {
       'x': x,
       'y': y,
@@ -442,6 +442,14 @@ class ARKitController {
         : null;
   }
 
+  Future<Matrix4?> cameraTransform() async {
+    final cameraTransform =
+        await _channel.invokeListMethod<double>('cameraTransform');
+    return cameraTransform != null
+        ? _matrixConverter.fromJson(cameraTransform)
+        : null;
+  }
+  
   Future<Matrix4?> cameraViewMatrix() async {
     final cameraViewMatrix =
         await _channel.invokeListMethod<double>('cameraViewMatrix');

@@ -217,12 +217,23 @@ extension FlutterArkitView {
     
     func onCameraViewMatrix(_ result: FlutterResult) {
         if let frame = sceneView.session.currentFrame {
-            let matrix = serializeMatrix(frame.camera.viewMatrix)
+
+            let matrix = serializeMatrix(frame.camera.viewMatrix(for:.portrait))
             result(matrix)
         } else {
             result(nil)
         }
     }
+
+    func onCameraTransform(_ result: FlutterResult) {
+        if let frame = sceneView.session.currentFrame {
+            let matrix = serializeMatrix(frame.camera.transform)
+            result(matrix)
+        } else {
+            result(nil)
+        }
+    }
+
 
     func onPointOfViewTransform(_ result: FlutterResult) {
         if let pointOfView = sceneView.pointOfView {
