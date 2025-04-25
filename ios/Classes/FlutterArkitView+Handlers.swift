@@ -355,13 +355,21 @@ extension FlutterArkitView {
                 )
 
                 let depthArray = Array(UnsafeBufferPointer(start: floatBuffer, count: depthWidth * depthHeight)).map { $0.isNaN ? -1 : $0 }
-
+                let transform = currentFrame.camera.transform
+                let transformString = String(
+                    format: "%f,%f,%f,%f-%f,%f,%f,%f-%f,%f,%f,%f-%f,%f,%f,%f",
+                    transform.columns.0.x, transform.columns.0.y, transform.columns.0.z, transform.columns.0.w,transform.columns.1.x, transform.columns.1.y,
+                    transform.columns.1.z,transform.columns.1.w,transform.columns.2.x, transform.columns.2.y, transform.columns.2.z, transform.columns.2.w,transform.columns.3.x, transform.columns.3.y, transform.columns.3.z, transform.columns.3.w
+                    
+                )
+                
                 let data: [String: Any] = [
                     "image": imageData,
                     "intrinsics": intrinsicsString,
                     "depthWidth": depthWidth,
                     "depthHeight": depthHeight,
                     "depthMap": depthArray,
+                    "transform": transformString
                 ]
 
                 result(data)

@@ -37,9 +37,10 @@ class _EarthPageState extends State<EarthPage> {
       lightingModelName: ARKitLightingModel.lambert,
       diffuse: ARKitMaterialProperty.image('earth.jpg'),
     );
-    final sphere = ARKitSphere(
+    final sphere = ARKitPlane(
       materials: [material],
-      radius: 0.1,
+      height: 0.1
+      // radius: 0.1,
     );
 
     final node = ARKitNode(
@@ -49,10 +50,10 @@ class _EarthPageState extends State<EarthPage> {
     );
     this.arkitController.add(node);
 
-    timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      final rotation = node.eulerAngles;
-      rotation.x += 0.01;
-      node.eulerAngles = rotation;
-    });
+    // timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+    //   final rotation = node.eulerAngles;
+    //   rotation.x += 0.01;
+    //   node.eulerAngles = rotation;
+    // });
   }
 }
