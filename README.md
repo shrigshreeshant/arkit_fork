@@ -1,4 +1,4 @@
-## This implementation of AR Kit has raycast implemented because its missing from the main package, also it returns view matrix from camera for estimation of raycast hit point manually
+## This implementation of AR Kit has raycast implemented because its missing from the main package, also it returns view matrix from camera for estimation of raycast hit point manually, This also adds a transformation matrix in depth api
 
 ![logo](./logo.png)
 
