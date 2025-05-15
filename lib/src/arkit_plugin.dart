@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 class ARKitPlugin {
   static const MethodChannel _channel = MethodChannel('arkit_configuration');
+static const EventChannel _cameraStreamChannel = EventChannel('arkit/cameraStream');
 
   ARKitPlugin._();
 
@@ -10,5 +11,10 @@ class ARKitPlugin {
     return _channel.invokeMethod<bool>('checkConfiguration', {
       'configuration': configuration.index,
     }).then((value) => value!);
+  }
+  static Stream<Uint8List> getCameraImageStream() {
+    return _cameraStreamChannel.receiveBroadcastStream().map<Uint8List>((event) {
+      return event as Uint8List;
+    });
   }
 }

@@ -4,6 +4,8 @@ import Foundation
 class FlutterArkitView: NSObject, FlutterPlatformView {
     let sceneView: ARSCNView
     let channel: FlutterMethodChannel
+      var cameraStreamEventSink: FlutterEventSink?
+    var displayLink: CADisplayLink?
 
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
@@ -128,5 +130,51 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         sceneView.session.pause()
         channel.setMethodCallHandler(nil)
         result(nil)
+    }
+}
+
+
+extension FlutterArkitView: FlutterStreamHandler {
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        cameraStreamEventSink = events
+        startCameraStreaming()
+        return nil
+    }
+
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        stopCameraStreaming()
+        cameraStreamEventSink = nil
+        return nil
+    }
+
+    func startCameraStreaming() {
+        guard displayLink == nil else { return }
+        displayLink = CADisplayLink(target: self, selector: #selector(streamCameraFrame))
+        displayLink?.preferredFramesPerSecond = 30
+        displayLink?.add(to: .main, forMode: .common)
+    }
+
+    func stopCameraStreaming() {
+        displayLink?.invalidate()
+        displayLink = nil
+    }
+
+    @objc func streamCameraFrame() {
+        guard let frame = sceneView.session.currentFrame else { return }
+        let pixelBuffer = frame.capturedImage
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let context = CIContext()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
+
+            let image = UIImage(cgImage: cgImage)
+            guard let jpegData = image.jpegData(compressionQuality: 0.5) else { return }
+
+            let flutterData = FlutterStandardTypedData(bytes: jpegData)
+            DispatchQueue.main.async {
+                self.cameraStreamEventSink?(flutterData)
+            }
+        }
     }
 }
