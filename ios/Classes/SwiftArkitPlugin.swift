@@ -6,6 +6,11 @@ public class SwiftArkitPlugin: NSObject, FlutterPlugin {
     public static var registrar: FlutterPluginRegistrar? = nil
 
     public static func register(with registrar: FlutterPluginRegistrar) {
+
+        let cameraStreamChannel = FlutterEventChannel(name: "arkit/cameraStream", binaryMessenger: registrar.messenger())
+        let cameraStreamHandler: CameraStreamHandler = CameraStreamHandler.shared
+        cameraStreamChannel.setStreamHandler(cameraStreamHandler)
+        
         SwiftArkitPlugin.registrar = registrar
         let arkitFactory = FlutterArkitFactory(messenger: registrar.messenger())
         registrar.register(arkitFactory, withId: "arkit")
@@ -13,9 +18,7 @@ public class SwiftArkitPlugin: NSObject, FlutterPlugin {
         let channel = FlutterMethodChannel(name: "arkit_configuration", binaryMessenger: registrar.messenger())
         registrar.addMethodCallDelegate(SwiftArkitPlugin(), channel: channel)
 
-let cameraStreamChannel = FlutterEventChannel(name: "arkit/cameraStream", binaryMessenger: registrar.messenger())
-        let cameraStreamHandler: CameraStreamHandler = CameraStreamHandler.shared
-        cameraStreamChannel.setStreamHandler(cameraStreamHandler)
+
     
     }
 
