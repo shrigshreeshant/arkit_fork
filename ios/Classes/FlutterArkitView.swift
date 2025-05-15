@@ -21,6 +21,10 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     }
 
     func view() -> UIView { return sceneView }
+    func setupEventChannels(messenger: FlutterBinaryMessenger) {
+        let cameraStreamChannel = FlutterEventChannel(name: "arkit/cameraStream", binaryMessenger: messenger)
+        cameraStreamChannel.setStreamHandler(self)
+    }
 
     func onMethodCalled(_ call: FlutterMethodCall, _ result: FlutterResult) {
         let arguments = call.arguments as? [String: Any]
