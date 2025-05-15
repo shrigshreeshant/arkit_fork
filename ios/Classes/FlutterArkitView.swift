@@ -19,11 +19,15 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
 
         sceneView.delegate = self
         channel.setMethodCallHandler(onMethodCalled)
+
+           setupEventChannels(messenger: msg)
     }
 
     func view() -> UIView { return sceneView }
     func setupEventChannels(messenger: FlutterBinaryMessenger) {
+        print("FlutterArkitView: Setting up event channels")
         CameraStreamHandler.shared.setActiveSceneView(sceneView)
+        print("FlutterArkitView: Event channels set up")
     }
 
     func onMethodCalled(_ call: FlutterMethodCall, _ result: FlutterResult) {
