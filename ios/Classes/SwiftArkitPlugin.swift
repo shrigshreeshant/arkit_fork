@@ -113,38 +113,78 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
         displayLink?.invalidate()
         displayLink = nil
     }
-    
+
     @objc func streamCameraFrame() {
-        guard let sceneView = activeSceneView,
-              let frame = sceneView.session.currentFrame,
-              let eventSink = eventSink else { 
-            print("CameraStreamHandler: Cannot stream frame - missing required components")
-            return 
+    guard let sceneView = activeSceneView,
+          let frame = sceneView.session.currentFrame,
+          let eventSink = eventSink else {
+        print("CameraStreamHandler: Cannot stream frame - missing required components")
+        return
+    }
+
+    let pixelBuffer = frame.capturedImage
+    let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+
+    // Use Metal-backed CIContext for GPU acceleration
+    let context = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
+
+    DispatchQueue.global(qos: .userInitiated).async {
+        // Optional: downscale if high speed is more important than quality
+        let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: 0.5, y: 0.5))
+
+        // Rotate
+        let rotatedImage = scaledImage.transformed(by: CGAffineTransform(rotationAngle: -.pi/2))
+
+        guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else {
+            print("CameraStreamHandler: Failed to create CGImage")
+            return
         }
-        
-        let pixelBuffer = frame.capturedImage
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        let context = CIContext()
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            // Rotate the image by 90 degrees
-            let rotatedImage = ciImage.transformed(by: CGAffineTransform(rotationAngle: -.pi/2))
-            
-            guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else { 
-                print("CameraStreamHandler: Failed to create CGImage")
-                return 
-            }
-            
-            let image = UIImage(cgImage: cgImage)
-            guard let jpegData = image.jpegData(compressionQuality: 0.5) else { 
-                print("CameraStreamHandler: Failed to create JPEG data")
-                return 
-            }
-            
-            let flutterData = FlutterStandardTypedData(bytes: jpegData)
-            DispatchQueue.main.async {
-                eventSink(flutterData)
-            }
+
+        // Faster than UIImage, but if Flutter expects JPEG, keep this
+        guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.4) else {
+            print("CameraStreamHandler: Failed to create JPEG data")
+            return
+        }
+
+        let flutterData = FlutterStandardTypedData(bytes: jpegData)
+
+        DispatchQueue.main.async {
+            eventSink(flutterData)
         }
     }
+}
+    
+    // @objc func streamCameraFrame() {
+    //     guard let sceneView = activeSceneView,
+    //           let frame = sceneView.session.currentFrame,
+    //           let eventSink = eventSink else { 
+    //         print("CameraStreamHandler: Cannot stream frame - missing required components")
+    //         return 
+    //     }
+        
+    //     let pixelBuffer = frame.capturedImage
+    //     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+    //     let context = CIContext()
+        
+    //     DispatchQueue.global(qos: .userInitiated).async {
+    //         // Rotate the image by 90 degrees
+    //         let rotatedImage = ciImage.transformed(by: CGAffineTransform(rotationAngle: -.pi/2))
+            
+    //         guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else { 
+    //             print("CameraStreamHandler: Failed to create CGImage")
+    //             return 
+    //         }
+            
+    //         let image = UIImage(cgImage: cgImage)
+    //         guard let jpegData = image.jpegData(compressionQuality: 0.5) else { 
+    //             print("CameraStreamHandler: Failed to create JPEG data")
+    //             return 
+    //         }
+            
+    //         let flutterData = FlutterStandardTypedData(bytes: jpegData)
+    //         DispatchQueue.main.async {
+    //             eventSink(flutterData)
+    //         }
+    //     }
+    // }
 }
