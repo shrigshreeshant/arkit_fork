@@ -127,7 +127,10 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
         let context = CIContext()
         
         DispatchQueue.global(qos: .userInitiated).async {
-            guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { 
+            // Rotate the image by 90 degrees
+            let rotatedImage = ciImage.transformed(by: CGAffineTransform(rotationAngle: .pi/2))
+            
+            guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else { 
                 print("CameraStreamHandler: Failed to create CGImage")
                 return 
             }
