@@ -143,7 +143,7 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
 
         guard let cgImage = self.ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
             return
-        }
+        
 
         // Compress JPEG
         guard let jpegData = autoreleasepool(invoking: {
@@ -161,7 +161,8 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
         ]
 
         // --- DEPTH MAP ---
-        if #available(iOS 11.3, *),
+        if #available(iOS 14.0, *),
+        print("Processing depth map... inside ")
            let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
             
             print("Processing depth map...")
