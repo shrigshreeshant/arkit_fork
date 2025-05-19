@@ -127,24 +127,19 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
     }
 
     let pixelBuffer = frame.capturedImage
-    let context = ciContext // Reuse context instead of creating every frame
+    let context = ciContext
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
     DispatchQueue.global(qos: .userInitiated).async {
-        // Resize and rotate in one affine transform
         let transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
             .rotated(by: -.pi / 2)
         let transformedImage = ciImage.transformed(by: transform)
 
-        guard let cgImage = context.createCGImage(transformedImage, from: transformedImage.extent) else {
-            return
-        }
-
-        // Compress JPEG in background
-        guard let jpegData = autoreleasepool(invoking: {
-            return UIImage(cgImage: cgImage)
-                .jpegData(compressionQuality: 0.4)
-        }) else {
+        guard let cgImage = context.createCGImage(transformedImage, from: transformedImage.extent),
+              let jpegData = autoreleasepool(invoking: {
+                  return UIImage(cgImage: cgImage)
+                      .jpegData(compressionQuality: 0.4)
+              }) else {
             return
         }
 
@@ -156,28 +151,32 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
             "imageHeight": cgImage.height
         ]
 
-        // --- DEPTH PROCESSING ---
+        // --- DEPTH PROCESSING: Convert Float32 buffer to [Double] in meters ---
         if #available(iOS 11.3, *),
            let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
-            
+
             CVPixelBufferLockBaseAddress(depthMap, .readOnly)
             defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
 
             let width = CVPixelBufferGetWidth(depthMap)
             let height = CVPixelBufferGetHeight(depthMap)
-            let rowBytes = CVPixelBufferGetBytesPerRow(depthMap)
+            let count = width * height
+
             guard let base = CVPixelBufferGetBaseAddress(depthMap) else { return }
 
-            // Depth as Float32 directly, avoid copy if possible
             let floatPtr = base.assumingMemoryBound(to: Float.self)
-            let floatCount = width * height
 
-            let depthData = Data(bytes: floatPtr, count: floatCount * MemoryLayout<Float>.size)
+            // Convert to [Double]
+            var depthArray = [Double](repeating: 0.0, count: count)
+            for i in 0..<count {
+                let value = floatPtr[i]
+                depthArray[i] = value.isFinite ? Double(value) : 0.0
+            }
 
-            resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)
+            resultMap["depthMap"] = depthArray
             resultMap["depthWidth"] = width
             resultMap["depthHeight"] = height
-            resultMap["depthFormat"] = "float32"
+            resultMap["depthFormat"] = "floatList"  // Optional tag for Flutter
         }
 
         DispatchQueue.main.async {
@@ -185,6 +184,7 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
         }
     }
 }
+
 
 
 
