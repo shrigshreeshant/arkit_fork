@@ -70,6 +70,16 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
     private override init() {
         super.init()
         print("CameraStreamHandler: Initializing")
+        let config = ARWorldTrackingConfiguration()
+
+if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+    config.frameSemantics.insert(.sceneDepth)
+    print("✅ sceneDepth enabled")
+} else {
+    print("❌ sceneDepth not supported")
+}
+
+sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
     }
     
     func setActiveSceneView(_ sceneView: ARSCNView) {
@@ -143,7 +153,7 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
 
         guard let cgImage = self.ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
             return
-        
+        }
 
         // Compress JPEG
         guard let jpegData = autoreleasepool(invoking: {
@@ -162,7 +172,6 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
 
         // --- DEPTH MAP ---
         if #available(iOS 14.0, *),
-        print("Processing depth map... inside ")
            let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
             
             print("Processing depth map...")
