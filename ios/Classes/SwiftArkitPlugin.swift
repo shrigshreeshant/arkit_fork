@@ -60,6 +60,9 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     private var displayLink: CADisplayLink?
     private var activeSceneView: ARSCNView?
+    private lazy var ciContext = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
+
+    
     
     private override init() {
         super.init()
@@ -114,45 +117,120 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
         displayLink = nil
     }
 
-    @objc func streamCameraFrame() {
+
+
+@objc func streamCameraFrame() {
     guard let sceneView = activeSceneView,
           let frame = sceneView.session.currentFrame,
           let eventSink = eventSink else {
-        print("CameraStreamHandler: Cannot stream frame - missing required components")
         return
     }
 
     let pixelBuffer = frame.capturedImage
+    let context = ciContext // Reuse context instead of creating every frame
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
-    // Use Metal-backed CIContext for GPU acceleration
-    let context = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
-
     DispatchQueue.global(qos: .userInitiated).async {
-        // Optional: downscale if high speed is more important than quality
-        let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: 0.5, y: 0.5))
+        // Resize and rotate in one affine transform
+        let transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
+            .rotated(by: -.pi / 2)
+        let transformedImage = ciImage.transformed(by: transform)
 
-        // Rotate
-        let rotatedImage = scaledImage.transformed(by: CGAffineTransform(rotationAngle: -.pi/2))
-
-        guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else {
-            print("CameraStreamHandler: Failed to create CGImage")
+        guard let cgImage = context.createCGImage(transformedImage, from: transformedImage.extent) else {
             return
         }
 
-        // Faster than UIImage, but if Flutter expects JPEG, keep this
-        guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.4) else {
-            print("CameraStreamHandler: Failed to create JPEG data")
+        // Compress JPEG in background
+        guard let jpegData = autoreleasepool(invoking: {
+            return UIImage(cgImage: cgImage)
+                .jpegData(compressionQuality: 0.4)
+        }) else {
             return
         }
 
-        let flutterData = FlutterStandardTypedData(bytes: jpegData)
+        let cameraData = FlutterStandardTypedData(bytes: jpegData)
+
+        var resultMap: [String: Any] = [
+            "cameraImage": cameraData,
+            "imageWidth": cgImage.width,
+            "imageHeight": cgImage.height
+        ]
+
+        // --- DEPTH PROCESSING ---
+        if #available(iOS 11.3, *),
+           let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
+            
+            CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+            defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+
+            let width = CVPixelBufferGetWidth(depthMap)
+            let height = CVPixelBufferGetHeight(depthMap)
+            let rowBytes = CVPixelBufferGetBytesPerRow(depthMap)
+            guard let base = CVPixelBufferGetBaseAddress(depthMap) else { return }
+
+            // Depth as Float32 directly, avoid copy if possible
+            let floatPtr = base.assumingMemoryBound(to: Float.self)
+            let floatCount = width * height
+
+            let depthData = Data(bytes: floatPtr, count: floatCount * MemoryLayout<Float>.size)
+
+            resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)
+            resultMap["depthWidth"] = width
+            resultMap["depthHeight"] = height
+            resultMap["depthFormat"] = "float32"
+        }
 
         DispatchQueue.main.async {
-            eventSink(flutterData)
+            eventSink(resultMap)
         }
     }
 }
+
+
+
+
+    //test 2 that was working without depth map
+
+
+//     @objc func streamCameraFrame() {
+//     guard let sceneView = activeSceneView,
+//           let frame = sceneView.session.currentFrame,
+//           let eventSink = eventSink else {
+//         print("CameraStreamHandler: Cannot stream frame - missing required components")
+//         return
+//     }
+
+//     let pixelBuffer = frame.capturedImage
+//     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+
+//     // Use Metal-backed CIContext for GPU acceleration
+//     let context = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
+
+//     DispatchQueue.global(qos: .userInitiated).async {
+//         // Optional: downscale if high speed is more important than quality
+//         let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: 0.5, y: 0.5))
+
+//         // Rotate
+//         let rotatedImage = scaledImage.transformed(by: CGAffineTransform(rotationAngle: -.pi/2))
+
+//         guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else {
+//             print("CameraStreamHandler: Failed to create CGImage")
+//             return
+//         }
+
+//         // Faster than UIImage, but if Flutter expects JPEG, keep this
+//         guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.4) else {
+//             print("CameraStreamHandler: Failed to create JPEG data")
+//             return
+//         }
+
+//         let flutterData = FlutterStandardTypedData(bytes: jpegData)
+
+//         DispatchQueue.main.async {
+//             eventSink(flutterData)
+//         }
+//     }
+// }
     
     // @objc func streamCameraFrame() {
     //     guard let sceneView = activeSceneView,
