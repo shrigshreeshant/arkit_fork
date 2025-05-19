@@ -141,7 +141,7 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
         let transform = CGAffineTransform(scaleX: 0.5, y: 0.5).rotated(by: -.pi / 2)
         let transformedImage = ciImage.transformed(by: transform)
 
-        guard let cgImage = ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
+        guard let cgImage = self.ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
             return
         }
 
