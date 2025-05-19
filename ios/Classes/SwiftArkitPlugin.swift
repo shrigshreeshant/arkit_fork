@@ -164,23 +164,32 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
         if #available(iOS 11.3, *),
            let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
             
+            print("Processing depth map...")
             CVPixelBufferLockBaseAddress(depthMap, .readOnly)
             defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
 
             let width = CVPixelBufferGetWidth(depthMap)
             let height = CVPixelBufferGetHeight(depthMap)
             let floatCount = width * height
+            print("Depth map dimensions: \(width)x\(height), total floats: \(floatCount)")
 
-            guard let base = CVPixelBufferGetBaseAddress(depthMap) else { return }
+            guard let base = CVPixelBufferGetBaseAddress(depthMap) else {
+                print("Failed to get base address of depth map")
+                return
+            }
             let floatPtr = base.assumingMemoryBound(to: Float.self)
 
             // Convert directly to Data (float32 meters)
             let depthData = Data(bytes: floatPtr, count: floatCount * MemoryLayout<Float>.size)
+            print("Created depth data of size: \(depthData.count) bytes")
 
             resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)
             resultMap["depthWidth"] = width
             resultMap["depthHeight"] = height
             resultMap["depthFormat"] = "float32"
+            print("Added depth map data to result map")
+        } else {
+            print("No depth map available or iOS version < 11.3")
         }
 
         DispatchQueue.main.async {
