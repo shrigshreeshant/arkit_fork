@@ -62,6 +62,9 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
     private var activeSceneView: ARSCNView?
     private lazy var ciContext = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
 
+var lastFrameTime = Date()
+let minFrameInterval: TimeInterval = 1.0 / 15.0
+
     
     
     private override init() {
@@ -120,6 +123,10 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
 
 
 @objc func streamCameraFrame() {
+    let now = Date()
+    guard now.timeIntervalSince(lastFrameTime) >= minFrameInterval else { return }
+    lastFrameTime = now
+
     guard let sceneView = activeSceneView,
           let frame = sceneView.session.currentFrame,
           let eventSink = eventSink else {
@@ -127,19 +134,21 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
     }
 
     let pixelBuffer = frame.capturedImage
-    let context = ciContext
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
     DispatchQueue.global(qos: .userInitiated).async {
-        let transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
-            .rotated(by: -.pi / 2)
+        // Resize and rotate image in one transform
+        let transform = CGAffineTransform(scaleX: 0.5, y: 0.5).rotated(by: -.pi / 2)
         let transformedImage = ciImage.transformed(by: transform)
 
-        guard let cgImage = context.createCGImage(transformedImage, from: transformedImage.extent),
-              let jpegData = autoreleasepool(invoking: {
-                  return UIImage(cgImage: cgImage)
-                      .jpegData(compressionQuality: 0.4)
-              }) else {
+        guard let cgImage = ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
+            return
+        }
+
+        // Compress JPEG
+        guard let jpegData = autoreleasepool(invoking: {
+            return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.4)
+        }) else {
             return
         }
 
@@ -151,32 +160,27 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
             "imageHeight": cgImage.height
         ]
 
-        // --- DEPTH PROCESSING: Convert Float32 buffer to [Double] in meters ---
+        // --- DEPTH MAP ---
         if #available(iOS 11.3, *),
            let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
-
+            
             CVPixelBufferLockBaseAddress(depthMap, .readOnly)
             defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
 
             let width = CVPixelBufferGetWidth(depthMap)
             let height = CVPixelBufferGetHeight(depthMap)
-            let count = width * height
+            let floatCount = width * height
 
             guard let base = CVPixelBufferGetBaseAddress(depthMap) else { return }
-
             let floatPtr = base.assumingMemoryBound(to: Float.self)
 
-            // Convert to [Double]
-            var depthArray = [Double](repeating: 0.0, count: count)
-            for i in 0..<count {
-                let value = floatPtr[i]
-                depthArray[i] = value.isFinite ? Double(value) : 0.0
-            }
+            // Convert directly to Data (float32 meters)
+            let depthData = Data(bytes: floatPtr, count: floatCount * MemoryLayout<Float>.size)
 
-            resultMap["depthMap"] = depthArray
+            resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)
             resultMap["depthWidth"] = width
             resultMap["depthHeight"] = height
-            resultMap["depthFormat"] = "floatList"  // Optional tag for Flutter
+            resultMap["depthFormat"] = "float32"
         }
 
         DispatchQueue.main.async {
