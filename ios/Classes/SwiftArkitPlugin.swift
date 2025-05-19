@@ -127,9 +127,9 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
     guard now.timeIntervalSince(lastFrameTime) >= minFrameInterval else { return }
     lastFrameTime = now
 
-    guard let sceneView = self.activeSceneView,
+    guard let sceneView = activeSceneView,
           let frame = sceneView.session.currentFrame,
-          let eventSink = self.eventSink else {
+          let eventSink = eventSink else {
         return
     }
 
@@ -184,7 +184,7 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
         }
 
         DispatchQueue.main.async {
-            self.eventSink(resultMap)
+            eventSink(resultMap)
         }
     }
 }
