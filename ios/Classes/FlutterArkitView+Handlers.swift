@@ -12,25 +12,53 @@ extension FlutterArkitView {
             sceneView.scene.rootNode.addChildNode(node)
         }
     }
-
+    
+    func animateNodePositionWithAction(_ node: SCNNode, to position: SCNVector3, duration: TimeInterval = 0.3) {
+        let moveAction = SCNAction.move(to: position, duration: duration)
+        moveAction.timingMode = .easeInEaseOut
+        node.runAction(moveAction)
+    }
     func onUpdateNode(_ arguments: [String: Any]) {
+        // Extract node name
         guard let nodeName = arguments["nodeName"] as? String else {
             logPluginError("nodeName deserialization failed", toChannel: channel)
             return
         }
+        print("[onUpdateNode] Updating node: \(nodeName)")
+
+        // Find the node in the scene by name
         guard let node = sceneView.scene.rootNode.childNode(withName: nodeName, recursively: true) else {
-            logPluginError("node not found", toChannel: channel)
+            logPluginError("Node '\(nodeName)' not found in scene", toChannel: channel)
             return
         }
+        print("[onUpdateNode] Found node: \(nodeName)")
+
+        // Update geometry if provided
         if let geometryArguments = arguments["geometry"] as? [String: Any],
-           let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
-        {
+           let geometry = createGeometry(geometryArguments, withDevice: sceneView.device) {
             node.geometry = geometry
+            print("[onUpdateNode] Geometry updated for node: \(nodeName)")
         }
+
+        // Update materials if provided
         if let materials = arguments["materials"] as? [[String: Any]] {
             node.geometry?.materials = parseMaterials(materials)
+            print("[onUpdateNode] Materials updated for node: \(nodeName)")
         }
+
+        // Apply translation if provided
+        if let translation = arguments["translation"] as? [String: Any],
+           let x = translation["x"] as? Float,
+           let y = translation["y"] as? Float,
+           let z = translation["z"] as? Float {
+            animateNodePositionWithAction(node, to: SCNVector3(x: x, y: y, z: z), duration: 0.15)
+                
+            print("[onUpdateNode] Node '\(nodeName)' translated by x:\(x), y:\(y), z:\(z)")
+        }
+
+        // Call additional node update logic (e.g., transforms, physics)
         updateNode(node, fromDict: arguments, forDevice: sceneView.device)
+        print("[onUpdateNode] Node '\(nodeName)' update complete.")
     }
 
     func onRemoveNode(_ arguments: [String: Any]) {

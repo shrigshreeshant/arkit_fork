@@ -342,6 +342,7 @@ class ARKitController {
   Future<void> update(
     String nodeName, {
     ARKitNode? node,
+    Vector3? translation,
     List<ARKitMaterial>? materials,
   }) {
     final params = <String, dynamic>{'nodeName': nodeName};
@@ -351,6 +352,12 @@ class ARKitController {
     if (materials != null) {
       params['materials'] = materials.map((e) => e.toJson()).toList();
     }
+    if(translation!=null){
+      params["translation"]={"x":translation.x,
+      "y":translation.y,
+      "z":translation.z};
+    }
+
     return _channel.invokeMethod('onUpdateNode', params);
   }
 
