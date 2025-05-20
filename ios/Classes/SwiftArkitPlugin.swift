@@ -133,6 +133,9 @@ let config = ARWorldTrackingConfiguration()
 
 
 
+
+
+// fastet yet v1
 @objc func streamCameraFrame() {
     let now = Date()
     guard now.timeIntervalSince(lastFrameTime) >= minFrameInterval else { return }
@@ -148,145 +151,133 @@ let config = ARWorldTrackingConfiguration()
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
     DispatchQueue.global(qos: .userInitiated).async {
-        // Resize and rotate image in one transform
-        let transform = CGAffineTransform(scaleX: 0.5, y: 0.5).rotated(by: -.pi / 2)
-        let transformedImage = ciImage.transformed(by: transform)
+        autoreleasepool {
+            // Resize and rotate image in one transform
+            let transform = CGAffineTransform(scaleX: 0.3, y: 0.3).rotated(by: -.pi / 2)
+            let transformedImage = ciImage.transformed(by: transform)
 
-        guard let cgImage = self.ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
-            return
-        }
-
-        // Compress JPEG
-        guard let jpegData = autoreleasepool(invoking: {
-            return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.4)
-        }) else {
-            return
-        }
-
-        let cameraData = FlutterStandardTypedData(bytes: jpegData)
-
-        var resultMap: [String: Any] = [
-            "cameraImage": cameraData,
-            "imageWidth": cgImage.width,
-            "imageHeight": cgImage.height
-        ]
-
-        // --- DEPTH MAP ---
-        if #available(iOS 14.0, *),
-           let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
-            
-            print("Processing depth map...")
-            CVPixelBufferLockBaseAddress(depthMap, .readOnly)
-            defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
-
-            let width = CVPixelBufferGetWidth(depthMap)
-            let height = CVPixelBufferGetHeight(depthMap)
-            let floatCount = width * height
-            print("Depth map dimensions: \(width)x\(height), total floats: \(floatCount)")
-
-            guard let base = CVPixelBufferGetBaseAddress(depthMap) else {
-                print("Failed to get base address of depth map")
+            guard let cgImage = self.ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
                 return
             }
-            let floatPtr = base.assumingMemoryBound(to: Float.self)
 
-            // Convert directly to Data (float32 meters)
-            let depthData = Data(bytes: floatPtr, count: floatCount * MemoryLayout<Float>.size)
-            print("Created depth data of size: \(depthData.count) bytes")
+            guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.35) else {
+                return
+            }
 
-            resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)
-            resultMap["depthWidth"] = width
-            resultMap["depthHeight"] = height
-            resultMap["depthFormat"] = "float32"
-            print("Added depth map data to result map")
-        } else {
-            print("No depth map available or iOS version < 11.3")
-        }
+            let cameraData = FlutterStandardTypedData(bytes: jpegData)
+            var resultMap: [String: Any] = [
+                "cameraImage": cameraData,
+                "imageWidth": cgImage.width,
+                "imageHeight": cgImage.height
+            ]
 
-        DispatchQueue.main.async {
-            eventSink(resultMap)
+            // --- DEPTH MAP ---
+            if #available(iOS 14.0, *),
+               let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
+                CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+                defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+
+                let width = CVPixelBufferGetWidth(depthMap)
+                let height = CVPixelBufferGetHeight(depthMap)
+                let strideAmount = 4
+                let sampledWidth = width / strideAmount
+                let sampledHeight = height / strideAmount
+
+                guard let base = CVPixelBufferGetBaseAddress(depthMap) else {
+                    print("Failed to get base address of depth map")
+                    return
+                }
+
+                let floatPtr = base.assumingMemoryBound(to: Float.self)
+                var sampledDepth = [Float](repeating: 0, count: sampledWidth * sampledHeight)
+
+                var destIdx = 0
+                for y in stride(from: 0, to: height, by: strideAmount) {
+                    for x in stride(from: 0, to: width, by: strideAmount) {
+                        let srcIdx = y * width + x
+                        sampledDepth[destIdx] = floatPtr[srcIdx]
+                        destIdx += 1
+                    }
+                }
+
+                let depthData = Data(bytes: sampledDepth, count: sampledDepth.count * MemoryLayout<Float>.size)
+                resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)
+                resultMap["depthWidth"] = sampledWidth
+                resultMap["depthHeight"] = sampledHeight
+                resultMap["depthFormat"] = "float32"
+                resultMap["depthStride"] = strideAmount
+            }
+
+            DispatchQueue.main.async {
+                eventSink(resultMap)
+            }
         }
     }
 }
 
+// fast veriosn
 
-
-
-
-    //test 2 that was working without depth map
-
-
-//     @objc func streamCameraFrame() {
-//     guard let sceneView = activeSceneView,
-//           let frame = sceneView.session.currentFrame,
-//           let eventSink = eventSink else {
-//         print("CameraStreamHandler: Cannot stream frame - missing required components")
-//         return
-//     }
-
-//     let pixelBuffer = frame.capturedImage
-//     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-
-//     // Use Metal-backed CIContext for GPU acceleration
-//     let context = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
-
-//     DispatchQueue.global(qos: .userInitiated).async {
-//         // Optional: downscale if high speed is more important than quality
-//         let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: 0.5, y: 0.5))
-
-//         // Rotate
-//         let rotatedImage = scaledImage.transformed(by: CGAffineTransform(rotationAngle: -.pi/2))
-
-//         guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else {
-//             print("CameraStreamHandler: Failed to create CGImage")
-//             return
-//         }
-
-//         // Faster than UIImage, but if Flutter expects JPEG, keep this
-//         guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.4) else {
-//             print("CameraStreamHandler: Failed to create JPEG data")
-//             return
-//         }
-
-//         let flutterData = FlutterStandardTypedData(bytes: jpegData)
-
-//         DispatchQueue.main.async {
-//             eventSink(flutterData)
-//         }
-//     }
+// @objc func streamCameraFrame() {
+//  let now = Date()
+// guard now.timeIntervalSince(lastFrameTime) >= minFrameInterval else { return }
+//  lastFrameTime = now
+// guard let sceneView = activeSceneView,
+// let frame = sceneView.session.currentFrame,
+// let eventSink = eventSink else {
+// return
+//  }
+// let pixelBuffer = frame.capturedImage
+// let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+//  DispatchQueue.global(qos: .userInitiated).async {
+// // Resize and rotate image in one transform
+// let transform = CGAffineTransform(scaleX: 0.5, y: 0.5).rotated(by: -.pi / 2)
+// let transformedImage = ciImage.transformed(by: transform)
+// guard let cgImage = self.ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
+// return
+//  }
+// // Compress JPEG
+// guard let jpegData = autoreleasepool(invoking: {
+// return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.4)
+//  }) else {
+// return
+//  }
+// let cameraData = FlutterStandardTypedData(bytes: jpegData)
+// var resultMap: [String: Any] = [
+// "cameraImage": cameraData,
+// "imageWidth": cgImage.width,
+// "imageHeight": cgImage.height
+//  ]
+// // --- DEPTH MAP ---
+// if #available(iOS 14.0, *),
+// let depthMap = frame.sceneDepth?.depthMap ?? frame.smoothedSceneDepth?.depthMap {
+// print("Processing depth map...")
+// CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+// defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+// let width = CVPixelBufferGetWidth(depthMap)
+// let height = CVPixelBufferGetHeight(depthMap)
+// let floatCount = width * height
+// print("Depth map dimensions: \(width)x\(height), total floats: \(floatCount)")
+// guard let base = CVPixelBufferGetBaseAddress(depthMap) else {
+// print("Failed to get base address of depth map")
+// return
+//  }
+// let floatPtr = base.assumingMemoryBound(to: Float.self)
+// // Convert directly to Data (float32 meters)
+// let depthData = Data(bytes: floatPtr, count: floatCount * MemoryLayout<Float>.size)
+// print("Created depth data of size: \(depthData.count) bytes")
+// resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)
+// resultMap["depthWidth"] = width
+// resultMap["depthHeight"] = height
+// resultMap["depthFormat"] = "float32"
+// print("Added depth map data to result map")
+//  } else {
+// print("No depth map available or iOS version < 11.3")
+//  }
+//  DispatchQueue.main.async {
+// eventSink(resultMap)
+//  }
+//  }
 // }
-    
-    // @objc func streamCameraFrame() {
-    //     guard let sceneView = activeSceneView,
-    //           let frame = sceneView.session.currentFrame,
-    //           let eventSink = eventSink else { 
-    //         print("CameraStreamHandler: Cannot stream frame - missing required components")
-    //         return 
-    //     }
-        
-    //     let pixelBuffer = frame.capturedImage
-    //     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-    //     let context = CIContext()
-        
-    //     DispatchQueue.global(qos: .userInitiated).async {
-    //         // Rotate the image by 90 degrees
-    //         let rotatedImage = ciImage.transformed(by: CGAffineTransform(rotationAngle: -.pi/2))
-            
-    //         guard let cgImage = context.createCGImage(rotatedImage, from: rotatedImage.extent) else { 
-    //             print("CameraStreamHandler: Failed to create CGImage")
-    //             return 
-    //         }
-            
-    //         let image = UIImage(cgImage: cgImage)
-    //         guard let jpegData = image.jpegData(compressionQuality: 0.5) else { 
-    //             print("CameraStreamHandler: Failed to create JPEG data")
-    //             return 
-    //         }
-            
-    //         let flutterData = FlutterStandardTypedData(bytes: jpegData)
-    //         DispatchQueue.main.async {
-    //             eventSink(flutterData)
-    //         }
-    //     }
-    // }
+
+
 }

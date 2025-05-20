@@ -20,6 +20,18 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         sceneView.delegate = self
         channel.setMethodCallHandler(onMethodCalled)
 
+         print("FlutterArkitView: Initializing AR configuration")
+    let config = ARWorldTrackingConfiguration()
+    if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+        config.frameSemantics.insert(.sceneDepth)
+        print("✅ sceneDepth supported and enabled")
+    } else {
+        print("❌ sceneDepth not supported on this device")
+    }
+
+      sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
+    print("✅ ARSession started with depth config")
+
            setupEventChannels(messenger: msg)
     }
 

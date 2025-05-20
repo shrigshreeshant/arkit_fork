@@ -4,6 +4,15 @@ import Foundation
 func createWorldTrackingConfiguration(_ arguments: [String: Any]) -> ARWorldTrackingConfiguration? {
     if ARWorldTrackingConfiguration.isSupported {
         let worldTrackingConfiguration = ARWorldTrackingConfiguration()
+
+        // Enable sceneDepth frame semantics if supported
+        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+            worldTrackingConfiguration.frameSemantics.insert(.sceneDepth)
+            print("✅ sceneDepth frame semantics enabled")
+        } else {
+            print("❌ sceneDepth frame semantics NOT supported on this device")
+        }
+
         if let environmentTexturing = arguments["environmentTexturing"] as? Int {
             if environmentTexturing == 0 {
                 worldTrackingConfiguration.environmentTexturing = .none

@@ -19,6 +19,7 @@ extension FlutterArkitView {
         sceneView.debugOptions = parseDebugOptions(arguments)
         configuration = parseConfiguration(arguments)
         if configuration != nil {
+            print("FlutterArkitView: Running ARSession with configuration")
             sceneView.session.run(configuration!)
         }
     }
