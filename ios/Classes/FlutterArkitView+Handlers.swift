@@ -16,43 +16,54 @@ extension FlutterArkitView {
     }
 
     func animateNodePositionWithAction(
-        _ node: SCNNode, to position: SCNVector3, duration: TimeInterval = 0.3
+        _ nodes: [SCNNode], to position: SCNVector3, duration: TimeInterval = 0.3
     ) {
+        let textPosition=SCNVector3(position.x-nodes[0].boundingBox.max.x/4,position.y+nodes[0].boundingBox.max.y*13,position.z)
         let moveAction = SCNAction.move(to: position, duration: duration)
+        let moveTextAction = SCNAction.move(to: textPosition, duration: duration)
         moveAction.timingMode = .easeInEaseOut
-        node.runAction(moveAction)
+        moveTextAction.timingMode = .easeInEaseOut
+
+            nodes[0].runAction(moveAction)
+        nodes[1].runAction(moveTextAction)
+        
         print("Translation comeplete")
     }
-    func onUpdateNode(_ arguments: [String: Any]) {
+    func onUpdateNodes(_ arguments: [String: Any]) {
         print("Entering onUpdateNode")
         // Extract node name
-        guard let nodeName = arguments["nodeName"] as? String else {
+        guard let nodeNames = arguments["nodeName"] as? [String] else {
             logPluginError("nodeName deserialization failed", toChannel: channel)
             return
         }
-        print("[onUpdateNode] Updating node: \(nodeName)")
+        print("[onUpdateNode] Updating node: \(nodeNames)")
 
         // Find the node in the scene by name
-        guard let node = sceneView.scene.rootNode.childNode(withName: nodeName, recursively: true)
-        else {
-            logPluginError("Node '\(nodeName)' not found in scene", toChannel: channel)
-            return
+        let foundNodes: [SCNNode] = nodeNames.compactMap { name in
+            let node = sceneView.scene.rootNode.childNode(withName: name, recursively: true)
+            if node == nil {
+                logPluginError("Node '\(name)' not found in scene", toChannel: channel)
+                
+            }
+            if let geometryArguments = arguments["geometry"] as? [String: Any],
+                let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
+            {
+                node?.geometry = geometry
+                print("[onUpdateNode] Geometry updated for node: \(nodeNames)")
+            }
+
+            // Update materials if provided
+            if let materials = arguments["materials"] as? [[String: Any]] {
+                node?.geometry?.materials = parseMaterials(materials)
+                print("[onUpdateNode] Materials updated for node: \(nodeNames)")
+            }
+            
+            return node
         }
-        print("[onUpdateNode] Found node: \(nodeName)")
+        print("[onUpdateNode] Found node: \(nodeNames)")
 
         // Update geometry if provided
-        if let geometryArguments = arguments["geometry"] as? [String: Any],
-            let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
-        {
-            node.geometry = geometry
-            print("[onUpdateNode] Geometry updated for node: \(nodeName)")
-        }
-
-        // Update materials if provided
-        if let materials = arguments["materials"] as? [[String: Any]] {
-            node.geometry?.materials = parseMaterials(materials)
-            print("[onUpdateNode] Materials updated for node: \(nodeName)")
-        }
+       
 
         func normalized(_ v: SCNVector3) -> SCNVector3 {
             let len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
@@ -79,57 +90,57 @@ extension FlutterArkitView {
             let endVec = SCNVector3(Float(ex), Float(ey), Float(ez))
 
             // Move node instantly to startVec
+            
+
+            // Set orientation to align node’s forward with direction vector
+            updateNodePositionAndOrientationSmoothly(nodes: foundNodes, startVec: startVec, endVec: endVec)
             if let translation = arguments["translation"] as? [String: Any],
                 let x = translation["x"] as? Double,
                 let y = translation["y"] as? Double,
                 let z = translation["z"] as? Double
             {
                 animateNodePositionWithAction(
-                    node, to: SCNVector3(x: Float(x), y: Float(y), z: Float(z)), duration: 0.15)
+                    foundNodes, to: SCNVector3(x: Float(x), y: Float(y+Double(foundNodes.first!.boundingBox.max.y)), z: Float(z)), duration: 0.15)
 
-                print("[onUpdateNode] Node '\(nodeName)' translated by x:\(x), y:\(y), z:\(z)")
+                print("[onUpdateNode] Node '\(nodeNames)' translated by x:\(x), y:\(y), z:\(z)")
             }
-
-            // Set orientation to align node’s forward with direction vector
-            updateNodePositionAndOrientationSmoothly(node: node, startVec: startVec, endVec: endVec)
         }
 
         // Call additional node update logic (e.g., transforms, physics)
-        updateNode(node, fromDict: arguments, forDevice: sceneView.device)
-        print("[onUpdateNode] Node '\(nodeName)' update complete.")
+       // updateNode(node, fromDict: arguments, forDevice: sceneView.device)
+        print("[onUpdateNode] Node '\(nodeNames)' update complete.")
     }
-
     func updateNodePositionAndOrientationSmoothly(
-
-        node: SCNNode,
+        nodes: [SCNNode],
         startVec: SCNVector3,
         endVec: SCNVector3,
         duration: CFTimeInterval = 0.2
     ) {
+        
 
-        let (minLength, maxLength) = node.boundingBox
+        let (minLength, maxLength) = nodes[0].boundingBox
         let originalLength = maxLength.x - minLength.x
-        print("Original Length: \(originalLength)")  // Or use .y or .z depending on model's forward axis
+        print("Original Length: \(originalLength)")
+
         // Step 1: Direction vector
         var direction = SCNVector3(
             x: endVec.x - startVec.x,
             y: endVec.y - startVec.y,
             z: endVec.z - startVec.z
         )
-        let length = sqrt(
-            direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
-
-        print("length \(length)")
-        let scaleFactor = length / originalLength
-        print("scaleFactor length \(scaleFactor)")
-        node.scale = SCNVector3(scaleFactor * 1.15, scaleFactor * 1.15, scaleFactor * 1.15)
+        let length = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
         guard length > 0.0001 else {
             print("Direction too short, skipping orientation")
             return
         }
+
+        print("length \(length)")
+        let scaleFactor = length / originalLength*1.2
+        print("scaleFactor \(scaleFactor)")
+
         direction = SCNVector3(direction.x / length, direction.y / length, direction.z / length)
 
-        // Step 2: Original model forward direction
+        // Step 2: Original forward vector (ruler lies along X axis)
         let nodeForward = SCNVector3(1, 0, 0)
 
         // Step 3: Rotation from nodeForward to direction
@@ -138,16 +149,12 @@ extension FlutterArkitView {
             y: nodeForward.z * direction.x - nodeForward.x * direction.z,
             z: nodeForward.x * direction.y - nodeForward.y * direction.x
         )
-        let dot =
-            nodeForward.x * direction.x + nodeForward.y * direction.y + nodeForward.z * direction.z
+        let dot = nodeForward.x * direction.x + nodeForward.y * direction.y + nodeForward.z * direction.z
         let axisLength = sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z)
 
         var lookRotation: SCNQuaternion
         if axisLength < 0.0001 {
-            lookRotation =
-                dot > 0
-                ? SCNQuaternion(0, 0, 0, 1)
-                : SCNQuaternion(0, 1, 0, 0)
+            lookRotation = dot > 0 ? SCNQuaternion(0, 0, 0, 1) : SCNQuaternion(0, 1, 0, 0)
         } else {
             let axis = SCNVector3(cross.x / axisLength, cross.y / axisLength, cross.z / axisLength)
             let angle = acos(min(max(dot, -1.0), 1.0))
@@ -156,48 +163,40 @@ extension FlutterArkitView {
             lookRotation = SCNQuaternion(axis.x * s, axis.y * s, axis.z * s, cos(half))
         }
 
-        // Step 4: 90° rotation around X axis
-        let halfAngle = Float.pi / 4  // 90° / 2 = 45°
+        // Step 4: 90° rotation to lift ruler from flat XZ to vertical
+        let halfAngle = Float.pi / 2 / 2  // 90° / 2 = 45°
         let sinHalf = sin(halfAngle)
         let cosHalf = cos(halfAngle)
         let xRotation = SCNQuaternion(sinHalf, 0, 0, cosHalf)
 
-        // Step 5: Combine both: finalRotation = lookRotation * xRotation
+        // Step 5: Combine: finalRotation = lookRotation * xRotation
         let finalRotation = SCNQuaternion(
-            lookRotation.x * xRotation.w + lookRotation.w * xRotation.x + lookRotation.y
-                * xRotation.z - lookRotation.z * xRotation.y,
-            lookRotation.y * xRotation.w + lookRotation.w * xRotation.y + lookRotation.z
-                * xRotation.x - lookRotation.x * xRotation.z,
-            lookRotation.z * xRotation.w + lookRotation.w * xRotation.z + lookRotation.x
-                * xRotation.y - lookRotation.y * xRotation.x,
-            lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y
-                * xRotation.y - lookRotation.z * xRotation.z
+            lookRotation.x * xRotation.w + lookRotation.w * xRotation.x + lookRotation.y * xRotation.z - lookRotation.z * xRotation.y,
+            lookRotation.y * xRotation.w + lookRotation.w * xRotation.y + lookRotation.z * xRotation.x - lookRotation.x * xRotation.z,
+            lookRotation.z * xRotation.w + lookRotation.w * xRotation.z + lookRotation.x * xRotation.y - lookRotation.y * xRotation.x,
+            lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y * xRotation.y - lookRotation.z * xRotation.z
         )
 
         // Step 6: Animate
         SCNTransaction.begin()
         SCNTransaction.animationDuration = duration
+        nodes[0].scale = SCNVector3(scaleFactor , scaleFactor, scaleFactor)
 
-        node.orientation = finalRotation
+for node in nodes {
+    node.orientation = finalRotation
+   
+            
+        }
+        nodes[1].eulerAngles = SCNVector3(Float.pi / 2, Float.pi / 2, 0)
+    
+
+        // Optional: reposition text nodes to midpoint (keep upright)
+    
+
         SCNTransaction.commit()
     }
-    func SCNQuaternionFromTo(from: SCNVector3, to: SCNVector3) -> (axis: SCNVector3, angle: Float) {
-        let cross = SCNVector3(
-            x: from.y * to.z - from.z * to.y,
-            y: from.z * to.x - from.x * to.z,
-            z: from.x * to.y - from.y * to.x
-        )
-        let dot = max(min(from.x * to.x + from.y * to.y + from.z * to.z, 1.0), -1.0)
-        let angle = acos(dot)
 
-        let axisLength = sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z)
-        if axisLength < 0.0001 {
-            return (SCNVector3(0, 1, 0), 0.0)  // Default axis if vectors are nearly aligned
-        }
 
-        let axis = SCNVector3(cross.x / axisLength, cross.y / axisLength, cross.z / axisLength)
-        return (axis, angle)
-    }
 
     func onRemoveNode(_ arguments: [String: Any]) {
         guard let nodeName = arguments["nodeName"] as? String else {

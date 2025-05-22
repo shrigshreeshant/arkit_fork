@@ -340,7 +340,7 @@ class ARKitController {
   }
 
   Future<void> update(
-    String nodeName, {
+    List<String> nodeNames, {
     ARKitNode? node,
     Vector3? translation,
     Vector3? startPoint,
@@ -348,7 +348,7 @@ class ARKitController {
     List<ARKitMaterial>? materials,
   }) {
     print("xxxx:::$translation");
-    final params = <String, dynamic>{'nodeName': nodeName};
+    final params = <String, dynamic>{'nodeName': nodeNames};
     if (node != null) {
       params.addAll(node.toMap());
     }

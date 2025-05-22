@@ -58,8 +58,9 @@ class _MidasPageState extends State<MidasPage> {
   }
 
   void onNodeTapHandler(List<String> nodesList) {
-    final name = nodesList.first;
-    arkitController.update(name, materials: [
+    //FIX: only for bugs need to fix it seperately
+    // final name = nodesList.first;
+    arkitController.update(nodesList, materials: [
       ARKitMaterial(
         lightingModelName: ARKitLightingModel.physicallyBased,
         diffuse: ARKitMaterialProperty.color(

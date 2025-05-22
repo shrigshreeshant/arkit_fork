@@ -61,7 +61,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             onAddNode(arguments!)
             result(nil)
         case "onUpdateNode":
-            onUpdateNode(arguments!)
+            onUpdateNodes(arguments!)
             result(nil)
         case "removeARKitNode":
             onRemoveNode(arguments!)
