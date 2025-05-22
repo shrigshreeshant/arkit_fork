@@ -146,6 +146,8 @@ let config = ARWorldTrackingConfiguration()
           let eventSink = eventSink else {
         return
     }
+    let resolution = frame.camera.imageResolution
+    print("Camera resolution: \(resolution.width) x \(resolution.height)")
 
     let pixelBuffer = frame.capturedImage
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
@@ -163,6 +165,7 @@ let config = ARWorldTrackingConfiguration()
             guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.35) else {
                 return
             }
+            
 
             let cameraData = FlutterStandardTypedData(bytes: jpegData)
             var resultMap: [String: Any] = [

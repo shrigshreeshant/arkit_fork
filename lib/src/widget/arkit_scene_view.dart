@@ -343,8 +343,11 @@ class ARKitController {
     String nodeName, {
     ARKitNode? node,
     Vector3? translation,
+    Vector3? startPoint,
+    Vector3? endPoint,
     List<ARKitMaterial>? materials,
   }) {
+    print("xxxx:::$translation");
     final params = <String, dynamic>{'nodeName': nodeName};
     if (node != null) {
       params.addAll(node.toMap());
@@ -352,11 +355,24 @@ class ARKitController {
     if (materials != null) {
       params['materials'] = materials.map((e) => e.toJson()).toList();
     }
-    if(translation!=null){
-      params["translation"]={"x":translation.x,
-      "y":translation.y,
-      "z":translation.z};
+    if (translation != null) {
+      params["translation"] = {
+        "x": translation.x,
+        "y": translation.y,
+        "z": translation.z
+      };
     }
+    if (startPoint != null) {
+      params["startPoint"] = {
+        "x": startPoint.x,
+        "y": startPoint.y,
+        "z": startPoint.z
+      };
+    }
+    if (endPoint != null) {
+      params["endPoint"] = {"x": endPoint.x, "y": endPoint.y, "z": endPoint.z};
+    }
+    print("this is params: $params");
 
     return _channel.invokeMethod('onUpdateNode', params);
   }
@@ -456,7 +472,7 @@ class ARKitController {
         ? _matrixConverter.fromJson(cameraTransform)
         : null;
   }
-  
+
   Future<Matrix4?> cameraViewMatrix() async {
     final cameraViewMatrix =
         await _channel.invokeListMethod<double>('cameraViewMatrix');

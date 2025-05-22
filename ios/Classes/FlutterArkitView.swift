@@ -5,13 +5,15 @@ import Foundation
 class FlutterArkitView: NSObject, FlutterPlatformView {
     let sceneView: ARSCNView
     let channel: FlutterMethodChannel
-      var cameraStreamEventSink: FlutterEventSink?
+    var cameraStreamEventSink: FlutterEventSink?
     var displayLink: CADisplayLink?
 
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
 
-    init(withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger) {
+    init(
+        withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger
+    ) {
         sceneView = ARSCNView(frame: frame)
         channel = FlutterMethodChannel(name: "arkit_\(viewId)", binaryMessenger: msg)
 
@@ -20,19 +22,19 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         sceneView.delegate = self
         channel.setMethodCallHandler(onMethodCalled)
 
-         print("FlutterArkitView: Initializing AR configuration")
-    let config = ARWorldTrackingConfiguration()
-    if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
-        config.frameSemantics.insert(.sceneDepth)
-        print("✅ sceneDepth supported and enabled")
-    } else {
-        print("❌ sceneDepth not supported on this device")
-    }
+        print("FlutterArkitView: Initializing AR configuration")
+        let config = ARWorldTrackingConfiguration()
+        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+            config.frameSemantics.insert(.sceneDepth)
+            print("✅ sceneDepth supported and enabled")
+        } else {
+            print("❌ sceneDepth not supported on this device")
+        }
 
-      sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
-    print("✅ ARSession started with depth config")
+        sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
+        print("✅ ARSession started with depth config")
 
-           setupEventChannels(messenger: msg)
+        setupEventChannels(messenger: msg)
     }
 
     func view() -> UIView { return sceneView }
@@ -152,5 +154,3 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         result(nil)
     }
 }
-
-

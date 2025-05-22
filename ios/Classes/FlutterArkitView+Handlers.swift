@@ -4,21 +4,27 @@ extension FlutterArkitView {
     func onAddNode(_ arguments: [String: Any]) {
         let geometryArguments = arguments["geometry"] as? [String: Any]
         let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
-        let node = createNode(geometry, fromDict: arguments, forDevice: sceneView.device, channel: channel)
+        let node = createNode(
+            geometry, fromDict: arguments, forDevice: sceneView.device, channel: channel)
         if let parentNodeName = arguments["parentNodeName"] as? String {
-            let parentNode = sceneView.scene.rootNode.childNode(withName: parentNodeName, recursively: true)
+            let parentNode = sceneView.scene.rootNode.childNode(
+                withName: parentNodeName, recursively: true)
             parentNode?.addChildNode(node)
         } else {
             sceneView.scene.rootNode.addChildNode(node)
         }
     }
-    
-    func animateNodePositionWithAction(_ node: SCNNode, to position: SCNVector3, duration: TimeInterval = 0.3) {
+
+    func animateNodePositionWithAction(
+        _ node: SCNNode, to position: SCNVector3, duration: TimeInterval = 0.3
+    ) {
         let moveAction = SCNAction.move(to: position, duration: duration)
         moveAction.timingMode = .easeInEaseOut
         node.runAction(moveAction)
+        print("Translation comeplete")
     }
     func onUpdateNode(_ arguments: [String: Any]) {
+        print("Entering onUpdateNode")
         // Extract node name
         guard let nodeName = arguments["nodeName"] as? String else {
             logPluginError("nodeName deserialization failed", toChannel: channel)
@@ -27,7 +33,8 @@ extension FlutterArkitView {
         print("[onUpdateNode] Updating node: \(nodeName)")
 
         // Find the node in the scene by name
-        guard let node = sceneView.scene.rootNode.childNode(withName: nodeName, recursively: true) else {
+        guard let node = sceneView.scene.rootNode.childNode(withName: nodeName, recursively: true)
+        else {
             logPluginError("Node '\(nodeName)' not found in scene", toChannel: channel)
             return
         }
@@ -35,7 +42,8 @@ extension FlutterArkitView {
 
         // Update geometry if provided
         if let geometryArguments = arguments["geometry"] as? [String: Any],
-           let geometry = createGeometry(geometryArguments, withDevice: sceneView.device) {
+            let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
+        {
             node.geometry = geometry
             print("[onUpdateNode] Geometry updated for node: \(nodeName)")
         }
@@ -46,19 +54,149 @@ extension FlutterArkitView {
             print("[onUpdateNode] Materials updated for node: \(nodeName)")
         }
 
-        // Apply translation if provided
-        if let translation = arguments["translation"] as? [String: Any],
-           let x = translation["x"] as? Float,
-           let y = translation["y"] as? Float,
-           let z = translation["z"] as? Float {
-            animateNodePositionWithAction(node, to: SCNVector3(x: x, y: y, z: z), duration: 0.15)
-                
-            print("[onUpdateNode] Node '\(nodeName)' translated by x:\(x), y:\(y), z:\(z)")
+        func normalized(_ v: SCNVector3) -> SCNVector3 {
+            let len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+            guard len > 0 else { return SCNVector3(0, 0, 0) }
+            return SCNVector3(v.x / len, v.y / len, v.z / len)
+        }
+
+        func cross(_ a: SCNVector3, _ b: SCNVector3) -> SCNVector3 {
+            return SCNVector3(
+                a.y * b.z - a.z * b.y,
+                a.z * b.x - a.x * b.z,
+                a.x * b.y - a.y * b.x
+            )
+        }
+
+        if let start = arguments["startPoint"] as? [String: Any],
+            let end = arguments["endPoint"] as? [String: Any],
+            let sx = start["x"] as? Double, let sy = start["y"] as? Double,
+            let sz = start["z"] as? Double,
+            let ex = end["x"] as? Double, let ey = end["y"] as? Double, let ez = end["z"] as? Double
+        {
+
+            let startVec = SCNVector3(Float(sx), Float(sy), Float(sz))
+            let endVec = SCNVector3(Float(ex), Float(ey), Float(ez))
+
+            // Move node instantly to startVec
+            if let translation = arguments["translation"] as? [String: Any],
+                let x = translation["x"] as? Double,
+                let y = translation["y"] as? Double,
+                let z = translation["z"] as? Double
+            {
+                animateNodePositionWithAction(
+                    node, to: SCNVector3(x: Float(x), y: Float(y), z: Float(z)), duration: 0.15)
+
+                print("[onUpdateNode] Node '\(nodeName)' translated by x:\(x), y:\(y), z:\(z)")
+            }
+
+            // Set orientation to align node’s forward with direction vector
+            updateNodePositionAndOrientationSmoothly(node: node, startVec: startVec, endVec: endVec)
         }
 
         // Call additional node update logic (e.g., transforms, physics)
         updateNode(node, fromDict: arguments, forDevice: sceneView.device)
         print("[onUpdateNode] Node '\(nodeName)' update complete.")
+    }
+
+    func updateNodePositionAndOrientationSmoothly(
+
+        node: SCNNode,
+        startVec: SCNVector3,
+        endVec: SCNVector3,
+        duration: CFTimeInterval = 0.2
+    ) {
+
+        let (minLength, maxLength) = node.boundingBox
+        let originalLength = maxLength.x - minLength.x
+        print("Original Length: \(originalLength)")  // Or use .y or .z depending on model's forward axis
+        // Step 1: Direction vector
+        var direction = SCNVector3(
+            x: endVec.x - startVec.x,
+            y: endVec.y - startVec.y,
+            z: endVec.z - startVec.z
+        )
+        let length = sqrt(
+            direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
+
+        print("length \(length)")
+        let scaleFactor = length / originalLength
+        print("scaleFactor length \(scaleFactor)")
+        node.scale = SCNVector3(scaleFactor * 1.15, scaleFactor * 1.15, scaleFactor * 1.15)
+        guard length > 0.0001 else {
+            print("Direction too short, skipping orientation")
+            return
+        }
+        direction = SCNVector3(direction.x / length, direction.y / length, direction.z / length)
+
+        // Step 2: Original model forward direction
+        let nodeForward = SCNVector3(1, 0, 0)
+
+        // Step 3: Rotation from nodeForward to direction
+        let cross = SCNVector3(
+            x: nodeForward.y * direction.z - nodeForward.z * direction.y,
+            y: nodeForward.z * direction.x - nodeForward.x * direction.z,
+            z: nodeForward.x * direction.y - nodeForward.y * direction.x
+        )
+        let dot =
+            nodeForward.x * direction.x + nodeForward.y * direction.y + nodeForward.z * direction.z
+        let axisLength = sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z)
+
+        var lookRotation: SCNQuaternion
+        if axisLength < 0.0001 {
+            lookRotation =
+                dot > 0
+                ? SCNQuaternion(0, 0, 0, 1)
+                : SCNQuaternion(0, 1, 0, 0)
+        } else {
+            let axis = SCNVector3(cross.x / axisLength, cross.y / axisLength, cross.z / axisLength)
+            let angle = acos(min(max(dot, -1.0), 1.0))
+            let half = angle / 2
+            let s = sin(half)
+            lookRotation = SCNQuaternion(axis.x * s, axis.y * s, axis.z * s, cos(half))
+        }
+
+        // Step 4: 90° rotation around X axis
+        let halfAngle = Float.pi / 4  // 90° / 2 = 45°
+        let sinHalf = sin(halfAngle)
+        let cosHalf = cos(halfAngle)
+        let xRotation = SCNQuaternion(sinHalf, 0, 0, cosHalf)
+
+        // Step 5: Combine both: finalRotation = lookRotation * xRotation
+        let finalRotation = SCNQuaternion(
+            lookRotation.x * xRotation.w + lookRotation.w * xRotation.x + lookRotation.y
+                * xRotation.z - lookRotation.z * xRotation.y,
+            lookRotation.y * xRotation.w + lookRotation.w * xRotation.y + lookRotation.z
+                * xRotation.x - lookRotation.x * xRotation.z,
+            lookRotation.z * xRotation.w + lookRotation.w * xRotation.z + lookRotation.x
+                * xRotation.y - lookRotation.y * xRotation.x,
+            lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y
+                * xRotation.y - lookRotation.z * xRotation.z
+        )
+
+        // Step 6: Animate
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = duration
+
+        node.orientation = finalRotation
+        SCNTransaction.commit()
+    }
+    func SCNQuaternionFromTo(from: SCNVector3, to: SCNVector3) -> (axis: SCNVector3, angle: Float) {
+        let cross = SCNVector3(
+            x: from.y * to.z - from.z * to.y,
+            y: from.z * to.x - from.x * to.z,
+            z: from.x * to.y - from.y * to.x
+        )
+        let dot = max(min(from.x * to.x + from.y * to.y + from.z * to.z, 1.0), -1.0)
+        let angle = acos(dot)
+
+        let axisLength = sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z)
+        if axisLength < 0.0001 {
+            return (SCNVector3(0, 1, 0), 0.0)  // Default axis if vectors are nearly aligned
+        }
+
+        let axis = SCNVector3(cross.x / axisLength, cross.y / axisLength, cross.z / axisLength)
+        return (axis, angle)
     }
 
     func onRemoveNode(_ arguments: [String: Any]) {
@@ -75,7 +213,9 @@ extension FlutterArkitView {
             logPluginError("anchorIdentifier deserialization failed", toChannel: channel)
             return
         }
-        if let anchor = sceneView.session.currentFrame?.anchors.first(where: { $0.identifier.uuidString == anchorIdentifier }) {
+        if let anchor = sceneView.session.currentFrame?.anchors.first(where: {
+            $0.identifier.uuidString == anchorIdentifier
+        }) {
             sceneView.session.remove(anchor: anchor)
         }
     }
@@ -87,7 +227,9 @@ extension FlutterArkitView {
             return
         }
         if let node = sceneView.scene.rootNode.childNode(withName: name, recursively: true) {
-            let resArray = [serializeVector(node.boundingBox.min), serializeVector(node.boundingBox.max)]
+            let resArray = [
+                serializeVector(node.boundingBox.min), serializeVector(node.boundingBox.max),
+            ]
             result(resArray)
         } else {
             logPluginError("node \(name) not found", toChannel: channel)
@@ -96,7 +238,7 @@ extension FlutterArkitView {
 
     func onTransformChanged(_ arguments: [String: Any]) {
         guard let name = arguments["name"] as? String,
-              let params = arguments["transformation"] as? [NSNumber]
+            let params = arguments["transformation"] as? [NSNumber]
         else {
             logPluginError("deserialization failed", toChannel: channel)
             return
@@ -110,7 +252,7 @@ extension FlutterArkitView {
 
     func onIsHiddenChanged(_ arguments: [String: Any]) {
         guard let name = arguments["name"] as? String,
-              let params = arguments["isHidden"] as? Bool
+            let params = arguments["isHidden"] as? Bool
         else {
             logPluginError("deserialization failed", toChannel: channel)
             return
@@ -124,10 +266,10 @@ extension FlutterArkitView {
 
     func onUpdateSingleProperty(_ arguments: [String: Any]) {
         guard let name = arguments["name"] as? String,
-              let args = arguments["property"] as? [String: Any],
-              let propertyName = args["propertyName"] as? String,
-              let propertyValue = args["propertyValue"],
-              let keyProperty = args["keyProperty"] as? String
+            let args = arguments["property"] as? [String: Any],
+            let propertyName = args["propertyName"] as? String,
+            let propertyValue = args["propertyValue"],
+            let keyProperty = args["keyProperty"] as? String
         else {
             logPluginError("deserialization failed", toChannel: channel)
             return
@@ -146,7 +288,7 @@ extension FlutterArkitView {
 
     func onUpdateMaterials(_ arguments: [String: Any]) {
         guard let name = arguments["name"] as? String,
-              let rawMaterials = arguments["materials"] as? [[String: Any]]
+            let rawMaterials = arguments["materials"] as? [[String: Any]]
         else {
             logPluginError("deserialization failed", toChannel: channel)
             return
@@ -162,19 +304,22 @@ extension FlutterArkitView {
     func onUpdateFaceGeometry(_ arguments: [String: Any]) {
         #if !DISABLE_TRUEDEPTH_API
             guard let name = arguments["name"] as? String,
-                  let param = arguments["geometry"] as? [String: Any],
-                  let fromAnchorId = param["fromAnchorId"] as? String
+                let param = arguments["geometry"] as? [String: Any],
+                let fromAnchorId = param["fromAnchorId"] as? String
             else {
                 logPluginError("deserialization failed", toChannel: channel)
                 return
             }
             if let node = sceneView.scene.rootNode.childNode(withName: name, recursively: true),
-               let geometry = node.geometry as? ARSCNFaceGeometry,
-               let anchor = sceneView.session.currentFrame?.anchors.first(where: { $0.identifier.uuidString == fromAnchorId }) as? ARFaceAnchor
+                let geometry = node.geometry as? ARSCNFaceGeometry,
+                let anchor = sceneView.session.currentFrame?.anchors.first(where: {
+                    $0.identifier.uuidString == fromAnchorId
+                }) as? ARFaceAnchor
             {
                 geometry.update(from: anchor.geometry)
             } else {
-                logPluginError("node not found, geometry was empty, or anchor not found", toChannel: channel)
+                logPluginError(
+                    "node not found, geometry was empty, or anchor not found", toChannel: channel)
             }
         #else
             logPluginError("TRUEDEPTH_API disabled", toChannel: channel)
@@ -183,7 +328,7 @@ extension FlutterArkitView {
 
     func onPerformHitTest(_ arguments: [String: Any], _ result: FlutterResult) {
         guard let x = arguments["x"] as? Double,
-              let y = arguments["y"] as? Double
+            let y = arguments["y"] as? Double
         else {
             logPluginError("deserialization failed", toChannel: channel)
             result(nil)
@@ -198,7 +343,7 @@ extension FlutterArkitView {
 
     func onPerformARRaycastHitTest(_ arguments: [String: Any], _ result: FlutterResult) {
         guard let x = arguments["x"] as? Double,
-              let y = arguments["y"] as? Double
+            let y = arguments["y"] as? Double
         else {
             logPluginError("deserialization failed", toChannel: channel)
             result(nil)
@@ -210,12 +355,14 @@ extension FlutterArkitView {
         let arHitResults = getARRaycastResultsArray(sceneView, atLocation: location)
         result(arHitResults)
     }
-    
-    
+
     func onGetLightEstimate(_ result: FlutterResult) {
         let frame = sceneView.session.currentFrame
         if let lightEstimate = frame?.lightEstimate {
-            let res = ["ambientIntensity": lightEstimate.ambientIntensity, "ambientColorTemperature": lightEstimate.ambientColorTemperature]
+            let res = [
+                "ambientIntensity": lightEstimate.ambientIntensity,
+                "ambientColorTemperature": lightEstimate.ambientColorTemperature,
+            ]
             result(res)
         } else {
             result(nil)
@@ -242,11 +389,11 @@ extension FlutterArkitView {
             result(nil)
         }
     }
-    
+
     func onCameraViewMatrix(_ result: FlutterResult) {
         if let frame = sceneView.session.currentFrame {
 
-            let matrix = serializeMatrix(frame.camera.viewMatrix(for:.portrait))
+            let matrix = serializeMatrix(frame.camera.viewMatrix(for: .portrait))
             result(matrix)
         } else {
             result(nil)
@@ -262,7 +409,6 @@ extension FlutterArkitView {
         }
     }
 
-
     func onPointOfViewTransform(_ result: FlutterResult) {
         if let pointOfView = sceneView.pointOfView {
             let matrix = serializeMatrix(pointOfView.simdWorldTransform)
@@ -274,16 +420,17 @@ extension FlutterArkitView {
 
     func onPlayAnimation(_ arguments: [String: Any]) {
         guard let key = arguments["key"] as? String,
-              let sceneName = arguments["sceneName"] as? String,
-              let animationIdentifier = arguments["animationIdentifier"] as? String
+            let sceneName = arguments["sceneName"] as? String,
+            let animationIdentifier = arguments["animationIdentifier"] as? String
         else {
             logPluginError("deserialization failed", toChannel: channel)
             return
         }
 
         if let sceneUrl = Bundle.main.url(forResource: sceneName, withExtension: "dae"),
-           let sceneSource = SCNSceneSource(url: sceneUrl, options: nil),
-           let animation = sceneSource.entryWithIdentifier(animationIdentifier, withClass: CAAnimation.self)
+            let sceneSource = SCNSceneSource(url: sceneUrl, options: nil),
+            let animation = sceneSource.entryWithIdentifier(
+                animationIdentifier, withClass: CAAnimation.self)
         {
             animation.repeatCount = 1
             animation.fadeInDuration = 1
@@ -354,7 +501,9 @@ extension FlutterArkitView {
 
     func onGetSnapshotWithDepthData(_ result: FlutterResult) {
         if #available(iOS 14.0, *) {
-            if let currentFrame = sceneView.session.currentFrame, let depthData = currentFrame.sceneDepth {
+            if let currentFrame = sceneView.session.currentFrame,
+                let depthData = currentFrame.sceneDepth
+            {
                 let originalImage = currentFrame.capturedImage
                 let ciImage = CIImage(cvPixelBuffer: originalImage)
                 let ciContext = CIContext()
@@ -370,7 +519,9 @@ extension FlutterArkitView {
                 let depthWidth = CVPixelBufferGetWidth(depthDataMap)
                 let depthHeight = CVPixelBufferGetHeight(depthDataMap)
 
-                let floatBuffer = unsafeBitCast(CVPixelBufferGetBaseAddress(depthDataMap), to: UnsafeMutablePointer<Float32>.self)
+                let floatBuffer = unsafeBitCast(
+                    CVPixelBufferGetBaseAddress(depthDataMap),
+                    to: UnsafeMutablePointer<Float32>.self)
 
                 CVPixelBufferUnlockBaseAddress(depthDataMap, CVPixelBufferLockFlags(rawValue: 0))
 
@@ -382,22 +533,28 @@ extension FlutterArkitView {
                     intrinsics.columns.2.x, intrinsics.columns.2.y, intrinsics.columns.2.z
                 )
 
-                let depthArray = Array(UnsafeBufferPointer(start: floatBuffer, count: depthWidth * depthHeight)).map { $0.isNaN ? -1 : $0 }
+                let depthArray = Array(
+                    UnsafeBufferPointer(start: floatBuffer, count: depthWidth * depthHeight)
+                ).map { $0.isNaN ? -1 : $0 }
                 let transform = currentFrame.camera.transform
                 let transformString = String(
                     format: "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f",
-                    transform.columns.0.x, transform.columns.0.y, transform.columns.0.z, transform.columns.0.w,transform.columns.1.x, transform.columns.1.y,
-                    transform.columns.1.z,transform.columns.1.w,transform.columns.2.x, transform.columns.2.y, transform.columns.2.z, transform.columns.2.w,transform.columns.3.x, transform.columns.3.y, transform.columns.3.z, transform.columns.3.w
-                    
+                    transform.columns.0.x, transform.columns.0.y, transform.columns.0.z,
+                    transform.columns.0.w, transform.columns.1.x, transform.columns.1.y,
+                    transform.columns.1.z, transform.columns.1.w, transform.columns.2.x,
+                    transform.columns.2.y, transform.columns.2.z, transform.columns.2.w,
+                    transform.columns.3.x, transform.columns.3.y, transform.columns.3.z,
+                    transform.columns.3.w
+
                 )
-                
+
                 let data: [String: Any] = [
                     "image": imageData,
                     "intrinsics": intrinsicsString,
                     "depthWidth": depthWidth,
                     "depthHeight": depthHeight,
                     "depthMap": depthArray,
-                    "transform": transformString
+                    "transform": transformString,
                 ]
 
                 result(data)
