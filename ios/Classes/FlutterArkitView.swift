@@ -63,6 +63,10 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "onUpdateNode":
             onUpdateNodes(arguments!)
             result(nil)
+        case "groupNode":
+            onUpdateNodes(arguments!)
+            result(nil)
+
         case "removeARKitNode":
             onRemoveNode(arguments!)
             result(nil)
@@ -148,9 +152,43 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         }
     }
 
+    
     func onDispose(_ result: FlutterResult) {
-        sceneView.session.pause()
-        channel.setMethodCallHandler(nil)
-        result(nil)
+        print("Disposing AR Scene")
+
+         sceneView.session.pause()
+         sceneView.session.delegate = nil
+
+         clearScene() // Remove all child nodes and resources
+         sceneView.delegate = nil
+         sceneView.removeFromSuperview()
+         sceneView.scene = SCNScene()
+         
+         channel.setMethodCallHandler(nil)
+
+         result(nil)
+     
     }
+    
+    func clearScene() {
+        sceneView.scene.rootNode.enumerateChildNodes { node, _ in
+            node.geometry?.materials.forEach { material in
+                material.diffuse.contents = nil
+                material.normal.contents = nil
+                material.specular.contents = nil
+                material.metalness.contents = nil
+                material.roughness.contents = nil
+            }
+            node.geometry?.materials.removeAll()
+            node.geometry = nil
+            node.removeFromParentNode()
+        }
+        sceneView.scene = SCNScene() // reset scene
+    }
+
+//    func onDispose(_ result: FlutterResult) {
+//        sceneView.session.pause()
+//        channel.setMethodCallHandler(nil)
+//        result(nil)
+//    }
 }

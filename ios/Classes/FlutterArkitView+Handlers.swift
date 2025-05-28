@@ -2,6 +2,8 @@ import ARKit
 
 extension FlutterArkitView {
     func onAddNode(_ arguments: [String: Any]) {
+        
+        
         let geometryArguments = arguments["geometry"] as? [String: Any]
         let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
         let node = createNode(
@@ -10,25 +12,61 @@ extension FlutterArkitView {
             let parentNode = sceneView.scene.rootNode.childNode(
                 withName: parentNodeName, recursively: true)
             parentNode?.addChildNode(node)
+            if let translation = arguments["translation"] as? [String: Any],
+                let x = translation["x"] as? Double,
+                let y = translation["y"] as? Double,
+                let z = translation["z"] as? Double
+            {
+                //let localPosition = parentNode.convertPosition(worldPosition, from: nil)
+                DispatchQueue.main.async {
+                    
+                    node.localTranslate(by: SCNVector3(x, y, z))
+                    print("Child translated to: \(node.position)")
+                    
+                    if let scale = arguments["scale"] as? [String: Any],
+                        let x = scale["x"] as? Double,
+                        let y = scale["y"] as? Double,
+                       let z = scale["z"] as? Double{
+                        
+                        node.scale=SCNVector3(x,y, z)
+                        node.geometry?.firstMaterial?.isDoubleSided = true
+                    }
+       
+
+                    
+                    
+                    
+                    
+                }
+            }
+         
+        
         } else {
+            print("adding Sphere")
             sceneView.scene.rootNode.addChildNode(node)
         }
     }
 
     func animateNodePositionWithAction(
-        _ nodes: [SCNNode], to position: SCNVector3, duration: TimeInterval = 0.3
+        _ node: SCNNode, to position: SCNVector3, duration: TimeInterval = 0.3
     ) {
-        let textPosition=SCNVector3(position.x-nodes[0].boundingBox.max.x/4,position.y+nodes[0].boundingBox.max.y*13,position.z)
-        let moveAction = SCNAction.move(to: position, duration: duration)
-        let moveTextAction = SCNAction.move(to: textPosition, duration: duration)
-        moveAction.timingMode = .easeInEaseOut
-        moveTextAction.timingMode = .easeInEaseOut
-
-            nodes[0].runAction(moveAction)
-        nodes[1].runAction(moveTextAction)
         
+        let moveAction = SCNAction.move(to: position, duration: duration)
+        moveAction.timingMode = .easeInEaseOut
+        node.runAction(
+            moveAction
+           
+        )
+        
+
         print("Translation comeplete")
     }
+    
+    
+    
+    
+    
+
     func onUpdateNodes(_ arguments: [String: Any]) {
         print("Entering onUpdateNode")
         // Extract node name
@@ -91,39 +129,43 @@ extension FlutterArkitView {
 
             // Move node instantly to startVec
             
-
+            if foundNodes.isEmpty {return}
             // Set orientation to align node’s forward with direction vector
-            updateNodePositionAndOrientationSmoothly(nodes: foundNodes, startVec: startVec, endVec: endVec)
+           updateNodePositionAndOrientationSmoothly(node: foundNodes.first!, startVec: startVec, endVec: endVec,sceneView: sceneView)
             if let translation = arguments["translation"] as? [String: Any],
                 let x = translation["x"] as? Double,
                 let y = translation["y"] as? Double,
                 let z = translation["z"] as? Double
             {
                 animateNodePositionWithAction(
-                    foundNodes, to: SCNVector3(x: Float(x), y: Float(y+Double(foundNodes.first!.boundingBox.max.y)), z: Float(z)), duration: 0.15)
+                    foundNodes.first!, to: SCNVector3(x: Float(x), y: Float(y)+Float(foundNodes.first?.boundingBox.max.y ??  0
+                                                                            ) , z: Float(z)), duration: 0.15)
 
                 print("[onUpdateNode] Node '\(nodeNames)' translated by x:\(x), y:\(y), z:\(z)")
+                
+          
             }
         }
 
-        // Call additional node update logic (e.g., transforms, physics)
-       // updateNode(node, fromDict: arguments, forDevice: sceneView.device)
         print("[onUpdateNode] Node '\(nodeNames)' update complete.")
     }
+    
+
+
     func updateNodePositionAndOrientationSmoothly(
-        nodes: [SCNNode],
+        node: SCNNode,
         startVec: SCNVector3,
         endVec: SCNVector3,
+        sceneView: ARSCNView,
+        faceCameraInitially: Bool = false,
         duration: CFTimeInterval = 0.2
     ) {
         
-
-        let (minLength, maxLength) = nodes[0].boundingBox
+       
+        // Your existing orientation + scale logic
+        let (minLength, maxLength) = node.boundingBox
         let originalLength = maxLength.x - minLength.x
-        print("Original Length: \(originalLength)")
-
-        // Step 1: Direction vector
-        var direction = SCNVector3(
+        let direction = SCNVector3(
             x: endVec.x - startVec.x,
             y: endVec.y - startVec.y,
             z: endVec.z - startVec.z
@@ -134,22 +176,17 @@ extension FlutterArkitView {
             return
         }
 
-        print("length \(length)")
-        let scaleFactor = length / originalLength*1.2
-        print("scaleFactor \(scaleFactor)")
+   
+        let scaleFactor = length / originalLength*1.4
+        let dirNorm = SCNVector3(direction.x / length, direction.y / length, direction.z / length)
 
-        direction = SCNVector3(direction.x / length, direction.y / length, direction.z / length)
-
-        // Step 2: Original forward vector (ruler lies along X axis)
-        let nodeForward = SCNVector3(1, 0, 0)
-
-        // Step 3: Rotation from nodeForward to direction
+        let forward = SCNVector3(1, 0, 0)
         let cross = SCNVector3(
-            x: nodeForward.y * direction.z - nodeForward.z * direction.y,
-            y: nodeForward.z * direction.x - nodeForward.x * direction.z,
-            z: nodeForward.x * direction.y - nodeForward.y * direction.x
+            forward.y * dirNorm.z - forward.z * dirNorm.y,
+            forward.z * dirNorm.x - forward.x * dirNorm.z,
+            forward.x * dirNorm.y - forward.y * dirNorm.x
         )
-        let dot = nodeForward.x * direction.x + nodeForward.y * direction.y + nodeForward.z * direction.z
+        let dot = forward.x * dirNorm.x + forward.y * dirNorm.y + forward.z * dirNorm.z
         let axisLength = sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z)
 
         var lookRotation: SCNQuaternion
@@ -163,13 +200,11 @@ extension FlutterArkitView {
             lookRotation = SCNQuaternion(axis.x * s, axis.y * s, axis.z * s, cos(half))
         }
 
-        // Step 4: 90° rotation to lift ruler from flat XZ to vertical
-        let halfAngle = Float.pi / 2 / 2  // 90° / 2 = 45°
+        let halfAngle = Float.pi / 2 / 2
         let sinHalf = sin(halfAngle)
         let cosHalf = cos(halfAngle)
         let xRotation = SCNQuaternion(sinHalf, 0, 0, cosHalf)
 
-        // Step 5: Combine: finalRotation = lookRotation * xRotation
         let finalRotation = SCNQuaternion(
             lookRotation.x * xRotation.w + lookRotation.w * xRotation.x + lookRotation.y * xRotation.z - lookRotation.z * xRotation.y,
             lookRotation.y * xRotation.w + lookRotation.w * xRotation.y + lookRotation.z * xRotation.x - lookRotation.x * xRotation.z,
@@ -177,35 +212,65 @@ extension FlutterArkitView {
             lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y * xRotation.y - lookRotation.z * xRotation.z
         )
 
-        // Step 6: Animate
+
         SCNTransaction.begin()
         SCNTransaction.animationDuration = duration
-        nodes[0].scale = SCNVector3(scaleFactor , scaleFactor, scaleFactor)
-
-for node in nodes {
-    node.orientation = finalRotation
-   
-            
-        }
-        nodes[1].eulerAngles = SCNVector3(Float.pi / 2, Float.pi / 2, 0)
-    
-
-        // Optional: reposition text nodes to midpoint (keep upright)
-    
-
+        node.scale = SCNVector3(scaleFactor, scaleFactor, scaleFactor)
+        node.orientation = finalRotation
         SCNTransaction.commit()
     }
-
-
 
     func onRemoveNode(_ arguments: [String: Any]) {
         guard let nodeName = arguments["nodeName"] as? String else {
             logPluginError("nodeName deserialization failed", toChannel: channel)
             return
         }
-        let node = sceneView.scene.rootNode.childNode(withName: nodeName, recursively: true)
-        node?.removeFromParentNode()
+
+        guard let node = sceneView.scene.rootNode.childNode(withName: nodeName, recursively: true) else {
+            logPluginError("Node '\(nodeName)' not found for removal", toChannel: channel)
+            return
+        }
+
+        // ✅ Release materials
+        node.geometry?.materials.forEach { material in
+            // Clear textures if any (they are heavy)
+            material.diffuse.contents = nil
+            material.normal.contents = nil
+            material.ambient.contents = nil
+            material.emission.contents = nil
+            material.transparent.contents = nil
+            material.reflective.contents = nil
+            material.multiply.contents = nil
+            material.specular.contents = nil
+            material.metalness.contents = nil
+            material.roughness.contents = nil
+        }
+
+        // ✅ Remove materials and geometry references
+        node.geometry?.materials.removeAll()
+        node.geometry = nil
+
+        // ✅ Remove child nodes if any (recursive cleanup)
+        node.enumerateChildNodes { child, _ in
+            child.geometry?.materials.removeAll()
+            child.geometry = nil
+            child.removeFromParentNode()
+        }
+
+        // ✅ Finally remove node
+        node.removeFromParentNode()
     }
+
+
+//
+//    func onRemoveNode(_ arguments: [String: Any]) {
+//        guard let nodeName = arguments["nodeName"] as? String else {
+//            logPluginError("nodeName deserialization failed", toChannel: channel)
+//            return
+//        }
+//        let node = sceneView.scene.rootNode.childNode(withName: nodeName, recursively: true)
+//        node?.removeFromParentNode()
+//    }
 
     func onRemoveAnchor(_ arguments: [String: Any]) {
         guard let anchorIdentifier = arguments["anchorIdentifier"] as? String else {

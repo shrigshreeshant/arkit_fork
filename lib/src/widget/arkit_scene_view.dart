@@ -333,9 +333,25 @@ class ARKitController {
     _channel.invokeMethod<void>('dispose');
   }
 
-  Future<void> add(ARKitNode node, {String? parentNodeName}) {
+  Future<void> add(
+    ARKitNode node, {
+    String? parentNodeName,
+    Vector3? translation,
+    Vector3? scale,
+  }) {
     final params = _addParentNodeNameToParams(node.toMap(), parentNodeName);
     _subsribeToChanges(node);
+
+    if (translation != null) {
+      params["translation"] = {
+        "x": translation.x,
+        "y": translation.y,
+        "z": translation.z
+      };
+      if (scale != null) {
+        params["scale"] = {"x": scale.x, "y": scale.y, "z": scale.z};
+      }
+    }
     return _channel.invokeMethod('addARKitNode', params);
   }
 
@@ -375,6 +391,14 @@ class ARKitController {
     print("this is params: $params");
 
     return _channel.invokeMethod('onUpdateNode', params);
+  }
+
+  Future<void> groupNodes(
+    List<ARKitNode> nodes,
+  ) {
+    final nodesmap = {"nodes": nodes};
+
+    return _channel.invokeMethod('groupNode', nodesmap);
   }
 
   Future<void> remove(String nodeName) {

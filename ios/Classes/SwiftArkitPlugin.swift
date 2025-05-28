@@ -147,7 +147,7 @@ let config = ARWorldTrackingConfiguration()
         return
     }
     let resolution = frame.camera.imageResolution
-    print("Camera resolution: \(resolution.width) x \(resolution.height)")
+    print(" \(resolution.width) x \(resolution.height)")
 
     let pixelBuffer = frame.capturedImage
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
@@ -202,6 +202,7 @@ let config = ARWorldTrackingConfiguration()
                         destIdx += 1
                     }
                 }
+                let cameraTransform=frame.camera.transform;
 
                 let depthData = Data(bytes: sampledDepth, count: sampledDepth.count * MemoryLayout<Float>.size)
                 resultMap["depthMap"] = FlutterStandardTypedData(bytes: depthData)

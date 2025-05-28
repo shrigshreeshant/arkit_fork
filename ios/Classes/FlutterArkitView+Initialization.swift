@@ -1,5 +1,42 @@
 import ARKit
 
+
+extension SCNVector3 {
+    func length() -> Float {
+        return sqrt(x*x + y*y + z*z)
+    }
+
+    func normalized() -> SCNVector3 {
+        let len = length()
+        return len > 0 ? self / len : SCNVector3(0,0,0)
+    }
+
+    func cross(vector: SCNVector3) -> SCNVector3 {
+        return SCNVector3(
+            x: y * vector.z - z * vector.y,
+            y: z * vector.x - x * vector.z,
+            z: x * vector.y - y * vector.x
+        )
+    }
+
+    static func +(lhs: SCNVector3, rhs: SCNVector3) -> SCNVector3 {
+        return SCNVector3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z)
+    }
+
+    static func -(lhs: SCNVector3, rhs: SCNVector3) -> SCNVector3 {
+        return SCNVector3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z)
+    }
+
+    static func *(lhs: SCNVector3, rhs: Float) -> SCNVector3 {
+        return SCNVector3(lhs.x * rhs, lhs.y * rhs, lhs.z * rhs)
+    }
+
+    static func /(lhs: SCNVector3, rhs: Float) -> SCNVector3 {
+        return SCNVector3(lhs.x / rhs, lhs.y / rhs, lhs.z / rhs)
+    }
+}
+
+
 extension FlutterArkitView {
     func initalize(_ arguments: [String: Any], _: FlutterResult) {
         if let showStatistics = arguments["showStatistics"] as? Bool {
