@@ -24,6 +24,9 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
 
         print("FlutterArkitView: Initializing AR configuration")
         let config = ARWorldTrackingConfiguration()
+        config.isLightEstimationEnabled = false
+        config.environmentTexturing = .none
+        config.frameSemantics = [] // Don'
         if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
             config.frameSemantics.insert(.sceneDepth)
             print("✅ sceneDepth supported and enabled")

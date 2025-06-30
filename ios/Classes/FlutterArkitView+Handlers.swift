@@ -8,6 +8,8 @@ extension FlutterArkitView {
         let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
         let node = createNode(
             geometry, fromDict: arguments, forDevice: sceneView.device, channel: channel)
+       
+
         if let parentNodeName = arguments["parentNodeName"] as? String {
             let parentNode = sceneView.scene.rootNode.childNode(
                 withName: parentNodeName, recursively: true)
@@ -46,6 +48,8 @@ extension FlutterArkitView {
             sceneView.scene.rootNode.addChildNode(node)
         }
     }
+    
+
 
     func animateNodePositionWithAction(
         _ node: SCNNode, to position: SCNVector3, duration: TimeInterval = 0.3
@@ -177,7 +181,7 @@ extension FlutterArkitView {
         }
 
    
-        let scaleFactor = length / originalLength*1.4
+        let scaleFactor = length / originalLength*1.30
         let dirNorm = SCNVector3(direction.x / length, direction.y / length, direction.z / length)
 
         let forward = SCNVector3(1, 0, 0)
@@ -189,18 +193,31 @@ extension FlutterArkitView {
         let dot = forward.x * dirNorm.x + forward.y * dirNorm.y + forward.z * dirNorm.z
         let axisLength = sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z)
 
+        
+        // Replace your entire lookRotation calculation with:
+
+        
+        
         var lookRotation: SCNQuaternion
         if axisLength < 0.0001 {
-            lookRotation = dot > 0 ? SCNQuaternion(0, 0, 0, 1) : SCNQuaternion(0, 1, 0, 0)
+            lookRotation = dot > 0 ? SCNQuaternion(0, 0, 0, 1) : SCNQuaternion(0, 0, 1, 0)
         } else {
             let axis = SCNVector3(cross.x / axisLength, cross.y / axisLength, cross.z / axisLength)
             let angle = acos(min(max(dot, -1.0), 1.0))
             let half = angle / 2
             let s = sin(half)
-            lookRotation = SCNQuaternion(axis.x * s, axis.y * s, axis.z * s, cos(half))
+            lookRotation = SCNQuaternion(-axis.x * s, -axis.y * s, -axis.z * s, cos(half))
+            print("dirNorm: \(dirNorm)")
+            print("cross: \(cross)")
+            print("axisLength: \(axisLength)")
+            print("axis: \(axis)")
+            print("angle: \(angle)")
+  
         }
+        
+        
 
-        let halfAngle = Float.pi / 2 / 2
+        let halfAngle = Float.pi / 2/2
         let sinHalf = sin(halfAngle)
         let cosHalf = cos(halfAngle)
         let xRotation = SCNQuaternion(sinHalf, 0, 0, cosHalf)
@@ -211,15 +228,24 @@ extension FlutterArkitView {
             lookRotation.z * xRotation.w + lookRotation.w * xRotation.z + lookRotation.x * xRotation.y - lookRotation.y * xRotation.x,
             lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y * xRotation.y - lookRotation.z * xRotation.z
         )
+        
+//        let finalRotation = SCNQuaternion(
+//            lookRotation.w * xRotation.x + lookRotation.x * xRotation.w + lookRotation.y * xRotation.z - lookRotation.z * xRotation.y,
+//            lookRotation.w * xRotation.y - lookRotation.x * xRotation.z + lookRotation.y * xRotation.w + lookRotation.z * xRotation.x,
+//            lookRotation.w * xRotation.z + lookRotation.x * xRotation.y - lookRotation.y * xRotation.x + lookRotation.z * xRotation.w,
+//            lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y * xRotation.y - lookRotation.z * xRotation.z
+//        )
+        
+ 
 
 
         SCNTransaction.begin()
         SCNTransaction.animationDuration = duration
         node.scale = SCNVector3(scaleFactor, scaleFactor, scaleFactor)
-        node.orientation = finalRotation
+      node.orientation = finalRotation
         SCNTransaction.commit()
     }
-
+ 
     func onRemoveNode(_ arguments: [String: Any]) {
         guard let nodeName = arguments["nodeName"] as? String else {
             logPluginError("nodeName deserialization failed", toChannel: channel)
@@ -415,6 +441,7 @@ extension FlutterArkitView {
         }
         let viewWidth = sceneView.bounds.size.width
         let viewHeight = sceneView.bounds.size.height
+        print(viewWidth,"x",viewHeight)
         let location = CGPoint(x: viewWidth * CGFloat(x), y: viewHeight * CGFloat(y))
         let arHitResults = getARRaycastResultsArray(sceneView, atLocation: location)
         result(arHitResults)

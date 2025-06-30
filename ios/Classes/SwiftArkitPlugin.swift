@@ -158,7 +158,31 @@ let config = ARWorldTrackingConfiguration()
             let transform = CGAffineTransform(scaleX: 0.3, y: 0.3).rotated(by: -.pi / 2)
             let transformedImage = ciImage.transformed(by: transform)
 
-            guard let cgImage = self.ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
+            // Step 1: Get original extent
+            let extent = transformedImage.extent
+            let originalWidth = extent.width
+            let originalHeight = extent.height
+            let desiredAspectRatio: CGFloat = 0.9225
+
+            // Step 2: Compute crop size maintaining aspect ratio
+            var cropWidth = originalWidth
+            var cropHeight = cropWidth / desiredAspectRatio
+
+            if cropHeight > originalHeight {
+                cropHeight = originalHeight
+                cropWidth = cropHeight * desiredAspectRatio
+            }
+
+            // Step 3: Center crop rectangle
+            let cropX = extent.midX - cropWidth / 2
+            let cropY = extent.midY - cropHeight / 2
+            let cropRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
+
+            // Step 4: Crop image
+            let croppedImage = transformedImage.cropped(to: cropRect)
+
+            // Step 5: Convert to CGImage and then JPEG
+            guard let cgImage = self.ciContext.createCGImage(croppedImage, from: croppedImage.extent) else {
                 return
             }
 

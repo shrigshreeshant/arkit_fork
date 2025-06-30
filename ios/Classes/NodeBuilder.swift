@@ -18,6 +18,24 @@ func createNode(_ geometry: SCNGeometry?, fromDict dict: [String: Any], forDevic
     return node
 }
 
+//
+//private func fixMaterials(node: SCNNode) {
+//    if let geometry = node.geometry {
+//        for material in geometry.materials {
+//            material.transparency = 1.0
+//            material.transparencyMode = .aOne // Try .rgbZero if using premultiplied alpha
+//            material.blendMode = .alpha
+//            material.writesToDepthBuffer = false
+//            material.readsFromDepthBuffer = false
+//            material.isDoubleSided = true
+//        }
+//    }
+//    for child in node.childNodes {
+//        fixMaterials(node: child)
+//    }
+//}
+
+
 func updateNode(_ node: SCNNode, fromDict dict: [String: Any], forDevice device: MTLDevice?) {
     if let transform = dict["transform"] as? [NSNumber] {
         node.transform = deserializeMatrix4(transform)
@@ -69,7 +87,7 @@ private func createGltfNode(_ dict: [String: Any], channel: FlutterMethodChannel
             let scene = try sceneSource.scene()
 
             for child in scene.rootNode.childNodes {
-                node.addChildNode(child.flattenedClone())
+                node.addChildNode(child.clone())
             }
 
             if let name = dict["name"] as? String {
