@@ -43,7 +43,7 @@ extension FlutterArkitView {
         let lightNode = SCNNode()
         lightNode.light = SCNLight()
         lightNode.light?.type = .directional
-        lightNode.light?.intensity = 2000
+        lightNode.light?.intensity = 50
         lightNode.light?.castsShadow = true
         lightNode.eulerAngles = SCNVector3(-Float.pi / 3, 0, 0)
         sceneView.scene.rootNode.addChildNode(lightNode)
