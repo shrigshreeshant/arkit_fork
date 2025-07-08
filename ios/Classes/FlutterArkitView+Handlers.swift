@@ -181,7 +181,7 @@ extension FlutterArkitView {
         }
 
    
-        let scaleFactor = length / originalLength*1.30
+        let scaleFactor = length / originalLength*1.23
         let dirNorm = SCNVector3(direction.x / length, direction.y / length, direction.z / length)
 
         let forward = SCNVector3(1, 0, 0)

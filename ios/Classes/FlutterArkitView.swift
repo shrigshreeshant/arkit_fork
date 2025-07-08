@@ -75,6 +75,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             result(nil)
         case "removeARKitAnchor":
             onRemoveAnchor(arguments!)
+      
             result(nil)
         case "addCoachingOverlay":
             if #available(iOS 13.0, *) {
