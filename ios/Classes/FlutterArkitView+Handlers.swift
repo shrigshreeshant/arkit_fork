@@ -589,6 +589,8 @@ extension FlutterArkitView {
             result(nil)
         }
     }
+    
+
 
     func onGetSnapshotWithDepthData(_ result: FlutterResult) {
         if #available(iOS 14.0, *) {

@@ -333,6 +333,16 @@ class ARKitController {
     _channel.invokeMethod<void>('dispose');
   }
 
+  Future<void> startRecording() async {
+    return _channel.invokeMethod('onStartRecordingVideo');
+  }
+
+  Future<String> stopRecordingVideo() async {
+    final result =
+        await _channel.invokeMethod('onStopRecordingVideo') as String;
+    return result;
+  }
+
   Future<void> add(
     ARKitNode node, {
     String? parentNodeName,
@@ -658,6 +668,7 @@ class ARKitController {
         case 'coachingOverlayViewDidDeactivate':
           coachingOverlayViewDidDeactivate?.call();
           break;
+
         default:
           if (debug) {
             debugPrint('Unknowm method ${call.method} ');
