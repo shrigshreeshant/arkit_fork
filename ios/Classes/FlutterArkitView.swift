@@ -7,7 +7,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     let channel: FlutterMethodChannel
     var cameraStreamEventSink: FlutterEventSink?
     var displayLink: CADisplayLink?
-    var recordingManager: ARCameraRecordingManager?
+    var recordingManager =  MetalSceneRecorder()
 
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
@@ -16,7 +16,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger
     ) {
         sceneView = ARSCNView(frame: frame)
-        recordingManager = ARCameraRecordingManager(session: sceneView.session,sceneView: sceneView)
+//        recordingManager = ARCameraRecordingManager(session: sceneView.session,sceneView: sceneView)
 
         channel = FlutterMethodChannel(name: "arkit_\(viewId)", binaryMessenger: msg)
 
@@ -149,19 +149,28 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "cameraPosition":
             onGetCameraPosition(result)
         case "onStartRecordingVideo":
-            recordingManager!.startRecording()
+            recordingManager.startRecording(scene: sceneView.scene, size: CGSize(width: 1280, height: 720))
 
         case"onStopRecordingVideo":
-            recordingManager!.stopRecording { recordingId in
-                    if let id = recordingId {
-                        result(recordingId)
-                        print("Recording finished. ID: \(id)")
-                        // You can now find the recording in:
-                        _ = Helper.getRecordingDataDirectoryPath(recordingId: id)
-                    } else {
-                        print("Recording failed or was not started.")
-                    }
+            
+            recordingManager.stopRecording { url, error in
+                if let error = error {
+                    print("Recording failed: \(error)")
+                } else if let url = url {
+                    result(url.path)
+                    print("Recording saved to: \(url)")
                 }
+            }
+//            recordingManager!.stopRecording { recordingId in
+//                    if let id = recordingId {
+//                        result(recordingId)
+//                        print("Recording finished. ID: \(id)")
+//                        // You can now find the recording in:
+//                        _ = Helper.getRecordingDataDirectoryPath(recordingId: id)
+//                    } else {
+//                        print("Recording failed or was not started.")
+//                    }
+//                }
         
 
 
