@@ -2,25 +2,69 @@ import ARKit
 import Flutter
 import Foundation
 
-class FlutterArkitView: NSObject, FlutterPlatformView {
+class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordARDelegate {
+    func frame(didRender buffer: CVPixelBuffer, with time: CMTime, using rawBuffer: CVPixelBuffer) {
+    
+    }
+    
+    func recorder(didEndRecording path: URL, with noError: Bool) {
+    
+    }
+    
+    func recorder(didFailRecording error: (any Error)?, and status: String) {
+    
+    }
+    
+    func recorder(willEnterBackground status: RecordARStatus) {
+    
+    }
+    
     let sceneView: ARSCNView
     let channel: FlutterMethodChannel
     var cameraStreamEventSink: FlutterEventSink?
     var displayLink: CADisplayLink?
-    var recordingManager =  MetalSceneRecorder()
-
+    var recordingManager : ARCameraRecordingManager?
+    
+    var recorder: RecordAR?
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
+    let recordingQueue = DispatchQueue(label: "recordingThread", attributes: .concurrent)
+
 
     init(
         withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger
     ) {
         sceneView = ARSCNView(frame: frame)
-//        recordingManager = ARCameraRecordingManager(session: sceneView.session,sceneView: sceneView)
-
+        recordingManager = ARCameraRecordingManager(session: sceneView.session,sceneView: sceneView)
+       
         channel = FlutterMethodChannel(name: "arkit_\(viewId)", binaryMessenger: msg)
 
         super.init()
+        recorder = RecordAR(ARSceneKit: sceneView)
+        
+               /*----👇---- ARVideoKit Configuration ----👇----*/
+               
+               // Set the recorder's delegate
+               recorder?.delegate = self
+
+               // Set the renderer's delegate
+               recorder?.renderAR = self
+               
+               // Configure the renderer to perform additional image & video processing 👁
+               recorder?.onlyRenderWhileRecording = false
+        
+        recorder?.enableAudio=true
+               
+               // Configure ARKit content mode. Default is .auto
+               recorder?.contentMode = .aspectFill
+               
+               //record or photo add environment light rendering, Default is false
+               recorder?.enableAdjustEnvironmentLighting = true
+               
+               // Set the UIViewController orientations
+               recorder?.inputViewOrientations = [.landscapeLeft, .landscapeRight, .portrait]
+               // Configure RecordAR to store media files in local app directory
+               recorder?.deleteCacheWhenExported = false
 
         sceneView.delegate = self
         channel.setMethodCallHandler(onMethodCalled)
@@ -149,18 +193,20 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "cameraPosition":
             onGetCameraPosition(result)
         case "onStartRecordingVideo":
-            recordingManager.startRecording(scene: sceneView.scene, size: CGSize(width: 1280, height: 720))
+            recordingQueue.async {
+                          self.recorder?.record()
+                      }
 
         case"onStopRecordingVideo":
-            
-            recordingManager.stopRecording { url, error in
-                if let error = error {
-                    print("Recording failed: \(error)")
-                } else if let url = url {
-                    result(url.path)
-                    print("Recording saved to: \(url)")
+            recorder?.stop() { path in
+                if #available(iOS 16.0, *) {
+                    result(path.path())
+                } else {
+                    // Fallback on earlier versions
                 }
-            }
+                       }
+            
+   
 //            recordingManager!.stopRecording { recordingId in
 //                    if let id = recordingId {
 //                        result(recordingId)

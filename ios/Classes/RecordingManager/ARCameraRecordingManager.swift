@@ -48,7 +48,7 @@ class ARCameraRecordingManager: NSObject {
         self.session = session;
         self.sceneview=sceneView
         
-        let renderSize = CGSize(width: 1920, height: 1440) // or any resolution you want to record
+        let renderSize = CGSize(width: 1920, height: 1080) // or any resolution you want to record
 
         renderer = Renderer(sceneView: sceneView, size: renderSize)
         sessionQueue.async {
@@ -164,100 +164,104 @@ class ARCameraRecordingManager: NSObject {
         trimmedRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "rgb recorder queue trimmed")
     }
 }
+private let renderQueue = DispatchQueue(label: "com.myapp.rgbRenderQueue", qos: .userInitiated)
 
 @available(iOS 14.0, *)
 extension ARCameraRecordingManager: ARSessionDelegate {
-
     
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
-         
-         do {
-             // Check if renderer is available
-             guard let renderer = renderer else {
-                 print("⚠️ Renderer not available, skipping frame")
-                 return
-             }
-             
-             // Calculate frame time for renderer
-             let frameTime = CACurrentMediaTime()
-             
-             // Render the frame with aspect correction
-             guard let buffer = renderer.renderFrame(time: frameTime) else {
-                 print("❌ Failed to render frame")
-                 return
-             }
-             
-             // Update preview from rendered buffer
-             rgbStreamer.update(buffer)
-             
-             // Only proceed if recording
-             guard isRecordingRGBVideo else { return }
-             
-             let timeStamp = CMTime(seconds: frame.timestamp, preferredTimescale: 1_000_000_000)
-             if rgbVideoStartTimeStamp == CMTime.zero {
-                 rgbVideoStartTimeStamp = timeStamp
-             }
-             
-             currentTimeStamp = timeStamp
-             
-             print("**** @Controller: full rgb \(numRgbFrames) ****")
-             fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
-             numRgbFrames += 1
-             
-             if isRecordingLidarData {
-                 
-                 // Ensure sceneDepth is available
-                 guard let depthData = frame.sceneDepth else {
-                     print("Failed to acquire depth data.")
-                     return
-                 }
-                 // Get and copy confidence map
-                 guard let confidenceMapOriginal = depthData.confidenceMap else {
-                     print("Failed to get confidenceMap.")
-                     return
-                 }
-                 
-                 // Copy depth and confidence buffers to avoid retaining shared memory
-                 let depthMap = try depthData.depthMap.copy()
-                 let confidenceMap = try confidenceMapOriginal.copy()
-                 
-                 print("**** @Controller: trimmed rgb \(numLidarFrames) ****")
-                 trimmedRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
-                 
-                 print("**** @Controller: depth \(numLidarFrames) ****")
-                 depthRecorder.update(depthMap)
-                 
-                 print("**** @Controller: confidence \(numLidarFrames) ****")
-                 confidenceMapRecorder.update(confidenceMap)
-                 
-                 print("**** @Controller: camera info \(numLidarFrames) ****")
-                 let currentCameraInfo = CameraInfo(
-                     timestamp: frame.timestamp,
-                     intrinsics: frame.camera.intrinsics,
-                     transform: frame.camera.transform,
-                     eulerAngles: frame.camera.eulerAngles,
-                     exposureDuration: frame.camera.exposureDuration
-                 )
-                 cameraInfoRecorder.update(currentCameraInfo)
-                 numLidarFrames += 1
-             }
-             
-         } catch {
-             print("Failed to process frame: \(error)")
-         }
-     }
-     
-     func session(_ session: ARSession, didFailWithError error: Error) {
-         print("ARSession failed with error: \(error.localizedDescription)")
-     }
-     
-     func sessionWasInterrupted(_ session: ARSession) {
-         print("⚠️ AR Session interrupted")
-     }
-     
- 
- }
-
+        renderQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            do {
+                guard let renderer = self.renderer else {
+                    print("⚠️ Renderer not available, skipping frame")
+                    return
+                }
+                
+                // Ensure camera projection is up to date
+                renderer.updateCameraProjection(from: frame)
+                
+                // Use current media time for accurate timestamp
+                let frameTime = CACurrentMediaTime()
+                
+                // Render SceneKit frame into pixel buffer
+                guard let buffer = renderer.renderFrame(time: frameTime) else {
+                    print("❌ Failed to render frame")
+                    return
+                }
+                
+                // Update live RGB preview stream (e.g., for UI)
+                self.rgbStreamer.update(buffer)
+                
+                // Skip video processing if not recording
+                guard self.isRecordingRGBVideo else { return }
+                
+                // Convert AR timestamp to CMTime for video writing
+                let timeStamp = CMTime(seconds: frame.timestamp, preferredTimescale: 1_000_000_000)
+                
+                if self.rgbVideoStartTimeStamp == .zero {
+                    self.rgbVideoStartTimeStamp = timeStamp
+                }
+                
+                self.currentTimeStamp = timeStamp
+                
+                print("**** @Controller: full rgb \(self.numRgbFrames) ****")
+                self.fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
+                self.numRgbFrames += 1
+                
+                // Depth + Confidence + Camera Info recording
+                guard self.isRecordingLidarData else { return }
+                
+                guard let depthData = frame.sceneDepth else {
+                    print("❌ Failed to acquire depth data.")
+                    return
+                }
+                
+                guard let confidenceMapOriginal = depthData.confidenceMap else {
+                    print("❌ Failed to get confidenceMap.")
+                    return
+                }
+                
+                // Copy buffers to avoid retaining shared memory
+                let depthMap = try depthData.depthMap.copy()
+                let confidenceMap = try confidenceMapOriginal.copy()
+                
+                print("**** @Controller: trimmed rgb \(self.numLidarFrames) ****")
+                self.trimmedRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
+                
+                print("**** @Controller: depth \(self.numLidarFrames) ****")
+                self.depthRecorder.update(depthMap)
+                
+                print("**** @Controller: confidence \(self.numLidarFrames) ****")
+                self.confidenceMapRecorder.update(confidenceMap)
+                
+                print("**** @Controller: camera info \(self.numLidarFrames) ****")
+                let cameraInfo = CameraInfo(
+                    timestamp: frame.timestamp,
+                    intrinsics: frame.camera.intrinsics,
+                    transform: frame.camera.transform,
+                    eulerAngles: frame.camera.eulerAngles,
+                    exposureDuration: frame.camera.exposureDuration
+                )
+                self.cameraInfoRecorder.update(cameraInfo)
+                
+                self.numLidarFrames += 1
+                
+            } catch {
+                print("❌ Failed to process frame: \(error)")
+            }
+        }
+    }
+    
+    func session(_ session: ARSession, didFailWithError error: Error) {
+        print("ARSession failed with error: \(error.localizedDescription)")
+    }
+    
+    func sessionWasInterrupted(_ session: ARSession) {
+        print("⚠️ AR Session interrupted")
+    }
+}
 
 @available(iOS 14.0, *)
 extension ARCameraRecordingManager: AVCaptureAudioDataOutputSampleBufferDelegate {

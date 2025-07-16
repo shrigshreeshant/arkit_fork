@@ -13,6 +13,7 @@ extension FlutterArkitView {
         if let parentNodeName = arguments["parentNodeName"] as? String {
             let parentNode = sceneView.scene.rootNode.childNode(
                 withName: parentNodeName, recursively: true)
+    
             parentNode?.addChildNode(node)
             if let translation = arguments["translation"] as? [String: Any],
                 let x = translation["x"] as? Double,
@@ -45,6 +46,7 @@ extension FlutterArkitView {
         
         } else {
             print("adding Sphere")
+
             sceneView.scene.rootNode.addChildNode(node)
         }
     }
@@ -61,6 +63,30 @@ extension FlutterArkitView {
             moveAction
            
         )
+        let (minVec, maxVec) = node.boundingBox
+        let sizeX = maxVec.x - minVec.x
+        let sizeY = maxVec.y - minVec.y
+        let sizeZ = maxVec.z - minVec.z
+
+        // Determine longest axis
+        let (pivotAxis, pivotOffset): (SCNVector3, Float) = {
+            if sizeX >= sizeY && sizeX >= sizeZ {
+                return (SCNVector3(1, 0, 0), minVec.x + sizeX * 0.095)
+            } else if sizeY >= sizeX && sizeY >= sizeZ {
+                return (SCNVector3(0, 1, 0), minVec.y + sizeY * 0.095)
+            } else {
+                return (SCNVector3(0, 0, 1), minVec.z + sizeZ * 0.095)
+            }
+        }()
+
+        // Offset pivot along the longest axis
+        let pivotTranslation = SCNVector3(
+            pivotAxis.x * pivotOffset,
+            pivotAxis.y * pivotOffset,
+            pivotAxis.z * pivotOffset
+        )
+
+        node.pivot = SCNMatrix4MakeTranslation(pivotTranslation.x, pivotTranslation.y, pivotTranslation.z)
         
 
         print("Translation comeplete")
@@ -142,8 +168,7 @@ extension FlutterArkitView {
                 let z = translation["z"] as? Double
             {
                 animateNodePositionWithAction(
-                    foundNodes.first!, to: SCNVector3(x: Float(x), y: Float(y)+Float(foundNodes.first?.boundingBox.max.y ??  0
-                                                                            ) , z: Float(z)), duration: 0.15)
+                    foundNodes.first!, to: startVec, duration: 0.15)
 
                 print("[onUpdateNode] Node '\(nodeNames)' translated by x:\(x), y:\(y), z:\(z)")
                 
@@ -153,7 +178,74 @@ extension FlutterArkitView {
 
         print("[onUpdateNode] Node '\(nodeNames)' update complete.")
     }
-    
+
+
+//current working
+
+    func updateNodePositionAndOrientationSmoothly(
+        node: SCNNode,
+        startVec: SCNVector3,
+        endVec: SCNVector3,
+        sceneView: ARSCNView,
+        faceCameraInitially: Bool = false,
+        duration: CFTimeInterval = 0.2
+    ) {
+        
+        
+        let min = node.boundingBox.min
+        let max = node.boundingBox.max
+        let center = SCNVector3(
+            (min.x + max.x) / 2,
+            (min.y + max.y) / 2,
+            (min.z + max.z) / 2
+        )
+
+        // Translate pivot so that the center becomes the rotation point
+        node.pivot = SCNMatrix4MakeTranslation(center.x, center.y, center.z)
+        // Step 1: Direction and length
+        let direction = SCNVector3(
+            x: endVec.x - startVec.x,
+            y: endVec.y - startVec.y,
+            z: endVec.z - startVec.z
+        )
+        let length = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
+        guard length > 0.0001 else {
+            print("Direction too short, skipping orientation")
+            return
+        }
+
+        // Step 2: Scale factor (assumes model faces +X)
+        let (minVec, maxVec) = node.boundingBox
+        let originalLength = maxVec.x - minVec.x
+        let scaleFactor = length / originalLength*1.28
+
+        // Step 3: Use simd_quatf to rotate from +X to direction
+        let simdDir = simd_normalize(simd_float3(direction))
+        let simdForward = simd_float3(1, 0, 0) // model default forward axis
+        let q = simd_quatf(from: simdForward, to: simdDir)
+        var lookRotation = SCNQuaternion(q.imag.x, q.imag.y, q.imag.z, q.real)
+
+        // Step 4: Optional 90° rotation around X (if your model needs it)
+        let halfAngle = Float.pi / 4 // 90° / 2
+        let sinHalf = sin(halfAngle)
+        let cosHalf = cos(halfAngle)
+        let xRotation = SCNQuaternion(sinHalf, 0, 0, cosHalf)
+
+        // Quaternion multiplication: lookRotation * xRotation
+        let finalRotation = SCNQuaternion(
+            lookRotation.x * xRotation.w + lookRotation.w * xRotation.x + lookRotation.y * xRotation.z - lookRotation.z * xRotation.y,
+            lookRotation.y * xRotation.w + lookRotation.w * xRotation.y + lookRotation.z * xRotation.x - lookRotation.x * xRotation.z,
+            lookRotation.z * xRotation.w + lookRotation.w * xRotation.z + lookRotation.x * xRotation.y - lookRotation.y * xRotation.x,
+            lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y * xRotation.y - lookRotation.z * xRotation.z
+        )
+
+        // Step 5: Animate transform
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = duration
+        node.scale = SCNVector3(scaleFactor, scaleFactor, scaleFactor)
+        node.orientation = finalRotation
+        SCNTransaction.commit()
+    }
 
 
     func updateNodePositionAndOrientationSmoothly(
@@ -181,7 +273,7 @@ extension FlutterArkitView {
         }
 
    
-        let scaleFactor = length / originalLength*1.23
+        let scaleFactor = length / originalLength
         let dirNorm = SCNVector3(direction.x / length, direction.y / length, direction.z / length)
 
         let forward = SCNVector3(1, 0, 0)
