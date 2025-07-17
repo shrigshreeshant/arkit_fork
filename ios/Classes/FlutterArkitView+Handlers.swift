@@ -13,8 +13,7 @@ extension FlutterArkitView {
         if let parentNodeName = arguments["parentNodeName"] as? String {
             let parentNode = sceneView.scene.rootNode.childNode(
                 withName: parentNodeName, recursively: true)
-    
-            parentNode?.addChildNode(node)
+        
             if let translation = arguments["translation"] as? [String: Any],
                 let x = translation["x"] as? Double,
                 let y = translation["y"] as? Double,
@@ -22,8 +21,11 @@ extension FlutterArkitView {
             {
                 //let localPosition = parentNode.convertPosition(worldPosition, from: nil)
                 DispatchQueue.main.async {
-                    
+        
                     node.localTranslate(by: SCNVector3(x, y, z))
+                    let containerNode = SCNNode()
+                    containerNode.addChildNode(node)
+                    parentNode?.addChildNode(containerNode)
                     print("Child translated to: \(node.position)")
                     
                     if let scale = arguments["scale"] as? [String: Any],
@@ -34,12 +36,7 @@ extension FlutterArkitView {
                         node.scale=SCNVector3(x,y, z)
                         node.geometry?.firstMaterial?.isDoubleSided = true
                     }
-       
 
-                    
-                    
-                    
-                    
                 }
             }
          
