@@ -192,7 +192,7 @@ extension FlutterArkitView {
             (min.z + max.z) / 2
         )
         node.pivot = SCNMatrix4MakeTranslation(center.x, center.y, center.z)
-        print("🔹 Pivot center: \(center)")
+  
 
         // Step 1: Direction and length
         let direction = SCNVector3(
@@ -201,10 +201,8 @@ extension FlutterArkitView {
             z: endVec.z - startVec.z
         )
         let length = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
-        print("🔹 Direction vector: \(direction), Length: \(length)")
 
         guard length > 0.0001 else {
-            print("⚠️ Direction too short, skipping orientation")
             return
         }
 
@@ -212,32 +210,26 @@ extension FlutterArkitView {
         let (minVec, maxVec) = node.boundingBox
         let originalLength = maxVec.x - minVec.x
         let scaleFactor = length / originalLength * 1.28
-        print("🔹 Original model length (X): \(originalLength), Scale factor: \(scaleFactor)")
 
         // Step 3: Compute rotation quaternion
         let simdDir = simd_normalize(simd_float3(direction))
         let simdForward = simd_float3(1, 0, 0) // model default forward axis
         var q: simd_quatf
         let dot = simd_dot(simdForward, simdDir)
-        print("🔹 Dot product (forward · dir): \(dot)")
-        print("🔹 simdDir: \(simdDir), simdForward: \(simdForward)")
+       
 
-        if dot < -0.5 {
-            print("⚠️ 180° rotation detected, handling edge case")
+        if dot < -0.95 {
             var axis = simd_cross(simdForward, simd_float3(0, 1, 0))
             if simd_length_squared(axis) < 0.001 {
-                print("⚠️ simdForward is parallel to Y, switching to Z axis")
                 axis = simd_cross(simdForward, simd_float3(0, 0, 1))
             }
             axis = simd_normalize(axis)
-            print("🔹 Chosen rotation axis for 180°: \(axis)")
             q = simd_quatf(angle: .pi, axis: axis)
         } else {
             q = simd_quatf(from: simdForward, to: simdDir)
         }
 
         let lookRotation = SCNQuaternion(q.imag.x, q.imag.y, q.imag.z, q.real)
-        print("🔹 Quaternion (lookRotation): \(lookRotation)")
 
         // Step 4: Optional 90° correction
         let halfAngle = Float.pi / 4
@@ -251,7 +243,6 @@ extension FlutterArkitView {
             lookRotation.z * xRotation.w + lookRotation.w * xRotation.z + lookRotation.x * xRotation.y - lookRotation.y * xRotation.x,
             lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y * xRotation.y - lookRotation.z * xRotation.z
         )
-        print("🔹 Final rotation after optional X-rotation: \(finalRotation)")
 
         // Step 5: Animate transform
         SCNTransaction.begin()
