@@ -509,6 +509,7 @@ import PhotosUI
             adjustPausedTime = false
             backFromPause = false
             recordingWithLimit = false
+            recordingWithLimit = false
             
             pausedFrameTime = nil
             resumeFrameTime = nil

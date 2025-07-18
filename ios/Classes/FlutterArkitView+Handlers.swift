@@ -176,9 +176,6 @@ extension FlutterArkitView {
         print("[onUpdateNode] Node '\(nodeNames)' update complete.")
     }
 
-
-//current working
-
     func updateNodePositionAndOrientationSmoothly(
         node: SCNNode,
         startVec: SCNVector3,
@@ -187,8 +184,6 @@ extension FlutterArkitView {
         faceCameraInitially: Bool = false,
         duration: CFTimeInterval = 0.2
     ) {
-        
-        
         let min = node.boundingBox.min
         let max = node.boundingBox.max
         let center = SCNVector3(
@@ -196,9 +191,9 @@ extension FlutterArkitView {
             (min.y + max.y) / 2,
             (min.z + max.z) / 2
         )
-
-        // Translate pivot so that the center becomes the rotation point
         node.pivot = SCNMatrix4MakeTranslation(center.x, center.y, center.z)
+        print("🔹 Pivot center: \(center)")
+
         // Step 1: Direction and length
         let direction = SCNVector3(
             x: endVec.x - startVec.x,
@@ -206,43 +201,68 @@ extension FlutterArkitView {
             z: endVec.z - startVec.z
         )
         let length = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
+        print("🔹 Direction vector: \(direction), Length: \(length)")
+
         guard length > 0.0001 else {
-            print("Direction too short, skipping orientation")
+            print("⚠️ Direction too short, skipping orientation")
             return
         }
 
-        // Step 2: Scale factor (assumes model faces +X)
+        // Step 2: Scale factor
         let (minVec, maxVec) = node.boundingBox
         let originalLength = maxVec.x - minVec.x
-        let scaleFactor = length / originalLength*1.28
+        let scaleFactor = length / originalLength * 1.28
+        print("🔹 Original model length (X): \(originalLength), Scale factor: \(scaleFactor)")
 
-        // Step 3: Use simd_quatf to rotate from +X to direction
+        // Step 3: Compute rotation quaternion
         let simdDir = simd_normalize(simd_float3(direction))
         let simdForward = simd_float3(1, 0, 0) // model default forward axis
-        let q = simd_quatf(from: simdForward, to: simdDir)
-        var lookRotation = SCNQuaternion(q.imag.x, q.imag.y, q.imag.z, q.real)
+        var q: simd_quatf
+        let dot = simd_dot(simdForward, simdDir)
+        print("🔹 Dot product (forward · dir): \(dot)")
+        print("🔹 simdDir: \(simdDir), simdForward: \(simdForward)")
 
-        // Step 4: Optional 90° rotation around X (if your model needs it)
-        let halfAngle = Float.pi / 4 // 90° / 2
+        if dot < -0.5 {
+            print("⚠️ 180° rotation detected, handling edge case")
+            var axis = simd_cross(simdForward, simd_float3(0, 1, 0))
+            if simd_length_squared(axis) < 0.001 {
+                print("⚠️ simdForward is parallel to Y, switching to Z axis")
+                axis = simd_cross(simdForward, simd_float3(0, 0, 1))
+            }
+            axis = simd_normalize(axis)
+            print("🔹 Chosen rotation axis for 180°: \(axis)")
+            q = simd_quatf(angle: .pi, axis: axis)
+        } else {
+            q = simd_quatf(from: simdForward, to: simdDir)
+        }
+
+        let lookRotation = SCNQuaternion(q.imag.x, q.imag.y, q.imag.z, q.real)
+        print("🔹 Quaternion (lookRotation): \(lookRotation)")
+
+        // Step 4: Optional 90° correction
+        let halfAngle = Float.pi / 4
         let sinHalf = sin(halfAngle)
         let cosHalf = cos(halfAngle)
         let xRotation = SCNQuaternion(sinHalf, 0, 0, cosHalf)
 
-        // Quaternion multiplication: lookRotation * xRotation
         let finalRotation = SCNQuaternion(
             lookRotation.x * xRotation.w + lookRotation.w * xRotation.x + lookRotation.y * xRotation.z - lookRotation.z * xRotation.y,
             lookRotation.y * xRotation.w + lookRotation.w * xRotation.y + lookRotation.z * xRotation.x - lookRotation.x * xRotation.z,
             lookRotation.z * xRotation.w + lookRotation.w * xRotation.z + lookRotation.x * xRotation.y - lookRotation.y * xRotation.x,
             lookRotation.w * xRotation.w - lookRotation.x * xRotation.x - lookRotation.y * xRotation.y - lookRotation.z * xRotation.z
         )
+        print("🔹 Final rotation after optional X-rotation: \(finalRotation)")
 
         // Step 5: Animate transform
         SCNTransaction.begin()
         SCNTransaction.animationDuration = duration
         node.scale = SCNVector3(scaleFactor, scaleFactor, scaleFactor)
-        node.orientation = finalRotation
+        node.orientation=finalRotation
         SCNTransaction.commit()
+
+        print("✅ Node update complete.\n")
     }
+
 
 
     func onRemoveNode(_ arguments: [String: Any]) {
