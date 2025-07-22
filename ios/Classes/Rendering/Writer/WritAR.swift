@@ -22,6 +22,8 @@ class WritAR: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
     private var audioSettings: [String: Any]?
 
     let audioBufferQueue = DispatchQueue(label: "com.ahmedbekhit.AudioBufferQueue")
+    private let videoBufferQueue = DispatchQueue(label: "com.ahmedbekhit.VideoBufferQueue")
+
 
     private var isRecording: Bool = false
     

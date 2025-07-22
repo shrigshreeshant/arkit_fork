@@ -3,6 +3,7 @@ import 'package:arkit_plugin/src/arkit_node.dart';
 import 'package:arkit_plugin/src/enums/coaching_overlay_goal.dart';
 import 'package:arkit_plugin/src/geometries/material/arkit_material.dart';
 import 'package:arkit_plugin/src/hit/arkit_raycast_hit_test_result.dart';
+import 'package:arkit_plugin/src/models/video_path.dart';
 import 'package:arkit_plugin/src/widget/ar_environment_texturing.dart';
 import 'package:arkit_plugin/src/widget/ar_tracking_state.dart';
 import 'package:arkit_plugin/src/geometries/arkit_anchor.dart';
@@ -337,10 +338,16 @@ class ARKitController {
     return _channel.invokeMethod('onStartRecordingVideo');
   }
 
-  Future<String> stopRecordingVideo() async {
-    final result =
-        await _channel.invokeMethod('onStopRecordingVideo') as String;
-    return result;
+  Future<ARVideoPath> stopRecordingVideo() async {
+    final rawResult = await _channel.invokeMethod('onStopRecordingVideo');
+    print("Native result: $rawResult");
+
+    if (rawResult is Map) {
+      final result = rawResult.cast<String, dynamic>();
+      return ARVideoPath.fromMap(result);
+    } else {
+      throw Exception("Invalid response from native iOS: $rawResult");
+    }
   }
 
   Future<void> add(

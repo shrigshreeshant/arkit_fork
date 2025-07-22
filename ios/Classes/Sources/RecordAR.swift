@@ -773,9 +773,9 @@ extension RecordAR {
             return
         }
 
-        self.writerQueue.sync {
+        self.writerQueue.async {
             
-            var time: CMTime { return CMTime(seconds: renderer.time, preferredTimescale: 1000000) }
+            var time: CMTime { return CMTime(seconds: self.renderer.time, preferredTimescale: 1000000) }
             
             self.renderAR?.frame(didRender: buffer, with: time, using: rawBuffer)
 
@@ -820,7 +820,7 @@ extension RecordAR {
                     self.writer?.delegate = self.delegate
                 }
             } else if !self.isRecording && self.adjustPausedTime {
-                writer?.pause()
+                self.writer?.pause()
 
                 self.adjustPausedTime = false
                 
@@ -836,8 +836,10 @@ extension RecordAR {
                 self.resumeFrameTime = nil
                 
                 self.status = .paused
-                self.onlyRenderWhileRec = onlyRenderWhileRecording
+                self.onlyRenderWhileRec = self.onlyRenderWhileRecording
             }
         }
     }
 }
+
+

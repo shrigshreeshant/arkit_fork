@@ -13,16 +13,16 @@ class ARCameraRecordingManager: NSObject {
     
     private let sessionQueue = DispatchQueue(label: "ar camera recording queue")
     private let audioRecorderQueue = DispatchQueue(label: "audio recorder queue")
-    
+    private var thumbnailPath: String? = nil
     private var session : ARSession? = nil
-    private var sceneview : ARSCNView? = nil
+    private var count: Int = 0
     private var renderer: Renderer? = nil
     
     private let depthRecorder = DepthRecorder()
     // both fullRgbVideoRecorders will be initialized in configureSession
     private var fullRgbVideoRecorder: RGBRecorder? = nil
     private var trimmedRgbVideoRecorder: RGBRecorder? = nil
-    
+    private let thumbnailGenerator = ThumbnailGenerator()
     private let cameraInfoRecorder = CameraInfoRecorder()
     private let confidenceMapRecorder = ConfidenceMapRecorder()
     let rgbStreamer: RGBStreamProcessor = RGBStreamProcessor()
@@ -43,14 +43,11 @@ class ARCameraRecordingManager: NSObject {
     private var depthFrameResolution: [Int] = []
     private var frequency: Int?
     
-    init(session: ARSession,sceneView:ARSCNView) {
+    init(session: ARSession) {
         super.init()
         self.session = session;
-        self.sceneview=sceneView
-        
-        let renderSize = CGSize(width: 1920, height: 1080) // or any resolution you want to record
 
-        renderer = Renderer(sceneView: sceneView, size: renderSize)
+
         sessionQueue.async {
             self.configureSession()
         }
@@ -174,28 +171,17 @@ extension ARCameraRecordingManager: ARSessionDelegate {
             guard let self = self else { return }
             
             do {
-                guard let renderer = self.renderer else {
-                    print("⚠️ Renderer not available, skipping frame")
-                    return
-                }
+                let buffer = frame.capturedImage
                 
-                // Ensure camera projection is up to date
-                renderer.updateCameraProjection(from: frame)
-                
-                // Use current media time for accurate timestamp
-                let frameTime = CACurrentMediaTime()
-                
-                // Render SceneKit frame into pixel buffer
-                guard let buffer = renderer.renderFrame(time: frameTime) else {
-                    print("❌ Failed to render frame")
-                    return
-                }
+           
                 
                 // Update live RGB preview stream (e.g., for UI)
                 self.rgbStreamer.update(buffer)
                 
                 // Skip video processing if not recording
                 guard self.isRecordingRGBVideo else { return }
+                
+         
                 
                 // Convert AR timestamp to CMTime for video writing
                 let timeStamp = CMTime(seconds: frame.timestamp, preferredTimescale: 1_000_000_000)
@@ -337,6 +323,8 @@ extension ARCameraRecordingManager {
     /// - Prepares the RGB video recorder for recording in the appropriate directory.
     /// - Runs asynchronously on the session queue.
     func startRecording() {
+        var thumbnailBuffer: CVPixelBuffer? = nil
+
         do {
             try activateAudioSession()
         } catch {
@@ -350,6 +338,7 @@ extension ARCameraRecordingManager {
             
             self.rgbVideoStartTimeStamp = .zero
             if let currentFrame = session?.currentFrame {
+                thumbnailBuffer=currentFrame.capturedImage
                 cameraIntrinsic = currentFrame.camera.intrinsics
                 if let depthData = currentFrame.sceneDepth {
                     
@@ -362,6 +351,7 @@ extension ARCameraRecordingManager {
                     print("Unable to get depth resolution.")
                 }
             }
+        
             print("pre count: RGB FRAMES \(self.numRgbFrames), LIDAR FRAMES \(self.numRgbFrames)")
             
             self.recordingId = Helper.getRecordingId()
@@ -373,6 +363,25 @@ extension ARCameraRecordingManager {
             guard let dirUrl = self.dirUrl else {
                 print("Failed to get recording directory URL")
                 return
+            }
+            if #available(iOS 16.0, *) {
+                // Safely unwrap required values
+                guard
+                    let thumbnailBuffer = thumbnailBuffer,
+                    let dirPath = self.dirUrl?.path()
+                else {
+                    print("❌ Thumbnail generation skipped: Missing pixel buffer or directory path.")
+                    return
+                }
+
+   self.thumbnailGenerator.getThumbnailPath(
+                    pixelBuffer: thumbnailBuffer,
+                    toDirectory: dirPath,
+                    recordingId: recordingId
+                )
+            } else {
+                print("⚠️ Thumbnail generation is not supported on iOS versions below 16.0.")
+                // Optionally handle fallback if needed
             }
             
             self.fullRgbVideoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId)

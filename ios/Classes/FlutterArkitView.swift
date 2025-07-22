@@ -1,6 +1,8 @@
 import ARKit
 import Flutter
 import Foundation
+import SCNRecorder
+
 
 class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordARDelegate {
     func frame(didRender buffer: CVPixelBuffer, with time: CMTime, using rawBuffer: CVPixelBuffer) {
@@ -29,13 +31,14 @@ class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordA
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
     let recordingQueue = DispatchQueue(label: "recordingThread", attributes: .concurrent)
+    let arRecordingQueue = DispatchQueue(label: "arRecordingThread", attributes: .concurrent)
 
 
     init(
         withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger
     ) {
         sceneView = ARSCNView(frame: frame)
-        recordingManager = ARCameraRecordingManager(session: sceneView.session,sceneView: sceneView)
+        recordingManager = ARCameraRecordingManager(session: sceneView.session)
        
         channel = FlutterMethodChannel(name: "arkit_\(viewId)", binaryMessenger: msg)
 
@@ -193,30 +196,44 @@ class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordA
         case "cameraPosition":
             onGetCameraPosition(result)
         case "onStartRecordingVideo":
-            recordingQueue.async {
+            arRecordingQueue.async {
                           self.recorder?.record()
                       }
-
-        case"onStopRecordingVideo":
-            recorder?.stop() { path in
-                if #available(iOS 16.0, *) {
-                    result(path.path())
-                } else {
-                    // Fallback on earlier versions
-                }
-                       }
+            recordingQueue.async {
+                self.recordingManager?.startRecording()
+            }
             
-   
-//            recordingManager!.stopRecording { recordingId in
-//                    if let id = recordingId {
-//                        result(recordingId)
-//                        print("Recording finished. ID: \(id)")
-//                        // You can now find the recording in:
-//                        _ = Helper.getRecordingDataDirectoryPath(recordingId: id)
-//                    } else {
-//                        print("Recording failed or was not started.")
-//                    }
-//                }
+        case"onStopRecordingVideo":
+            
+            var arRecorderPath: String?
+            var recordingIdPath: String?
+            recorder?.stop { path in
+                if #available(iOS 16.0, *) {
+                    arRecorderPath = path.path()
+                } else {
+                    // Provide a fallback if needed
+                    arRecorderPath = path.absoluteString // or nil
+                }
+
+                self.recordingManager?.stopRecording { recordingId in
+                    if let id = recordingId {
+                        recordingIdPath = id
+
+                        // Construct response map
+                        let resultMap: [String: String] = [
+                            "recordingId": id,
+                            "recordingPath": arRecorderPath ?? ""
+                        ]
+
+                        // Send to Flutter
+                        result(resultMap)
+                    } else {
+                        // Send error or null
+                        result(FlutterError(code: "RECORDING_FAILED", message: "Recording failed or not started", details: nil))
+                    }
+                }
+            }
+
         
 
 
