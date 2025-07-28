@@ -4,30 +4,14 @@ import Foundation
 import SCNRecorder
 
 
-class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordARDelegate {
-    func frame(didRender buffer: CVPixelBuffer, with time: CMTime, using rawBuffer: CVPixelBuffer) {
-    
-    }
-    
-    func recorder(didEndRecording path: URL, with noError: Bool) {
-    
-    }
-    
-    func recorder(didFailRecording error: (any Error)?, and status: String) {
-    
-    }
-    
-    func recorder(willEnterBackground status: RecordARStatus) {
-    
-    }
+class FlutterArkitView: NSObject, FlutterPlatformView {
+
     
     let sceneView: ARSCNView
     let channel: FlutterMethodChannel
     var cameraStreamEventSink: FlutterEventSink?
     var displayLink: CADisplayLink?
-    var recordingManager : ARCameraRecordingManager?
-    
-    var recorder: RecordAR?
+
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
     let recordingQueue = DispatchQueue(label: "recordingThread", attributes: .concurrent)
@@ -38,54 +22,19 @@ class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordA
         withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger
     ) {
         sceneView = ARSCNView(frame: frame)
-        recordingManager = ARCameraRecordingManager(session: sceneView.session)
+
+   
        
         channel = FlutterMethodChannel(name: "arkit_\(viewId)", binaryMessenger: msg)
 
         super.init()
-        recorder = RecordAR(ARSceneKit: sceneView)
-        
-               /*----👇---- ARVideoKit Configuration ----👇----*/
-               
-               // Set the recorder's delegate
-               recorder?.delegate = self
-
-               // Set the renderer's delegate
-               recorder?.renderAR = self
-               
-               // Configure the renderer to perform additional image & video processing 👁
-               recorder?.onlyRenderWhileRecording = false
-        
-        recorder?.enableAudio=true
-               
-               // Configure ARKit content mode. Default is .auto
-               recorder?.contentMode = .aspectFill
-               
-               //record or photo add environment light rendering, Default is false
-               recorder?.enableAdjustEnvironmentLighting = true
-               
-               // Set the UIViewController orientations
-               recorder?.inputViewOrientations = [.landscapeLeft, .landscapeRight, .portrait]
-               // Configure RecordAR to store media files in local app directory
-               recorder?.deleteCacheWhenExported = false
 
         sceneView.delegate = self
         channel.setMethodCallHandler(onMethodCalled)
 
-        print("FlutterArkitView: Initializing AR configuration")
-        let config = ARWorldTrackingConfiguration()
-        config.isLightEstimationEnabled = false
-        config.environmentTexturing = .none
-        config.frameSemantics = [] // Don'
-        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
-            config.frameSemantics.insert(.sceneDepth)
-            print("✅ sceneDepth supported and enabled")
-        } else {
-            print("❌ sceneDepth not supported on this device")
-        }
 
-        sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
-        print("✅ ARSession started with depth config")
+        sceneView.prepareForRecording()
+
 
         setupEventChannels(messenger: msg)
     }
@@ -197,41 +146,39 @@ class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordA
             onGetCameraPosition(result)
         case "onStartRecordingVideo":
             arRecordingQueue.async {
-                          self.recorder?.record()
-                      }
-            recordingQueue.async {
-                self.recordingManager?.startRecording()
+                do {
+                    try self.sceneView.startVideoRecording()
+                    print("✅ Video recording started successfully")
+                } catch {
+                    print("❌ Failed to start video recording: \(error.localizedDescription)")
+                    // Handle the error appropriately
+                }
             }
+//            recordingQueue.async {
+//                self.recordingManager?.startRecording()
+//            }
             
         case"onStopRecordingVideo":
             
             var arRecorderPath: String?
-            var recordingIdPath: String?
-            recorder?.stop { path in
+
+            sceneView.finishVideoRecording { (videoRecording) in
+              /* Process the captured video. Main thread. */
+   
                 if #available(iOS 16.0, *) {
-                    arRecorderPath = path.path()
+                    arRecorderPath=videoRecording.url.path()
+                    print("path: \(arRecorderPath)")
+                    let resultMap: [String: String] = [
+                        "recordingId": "id",
+                        "recordingPath": arRecorderPath ?? ""
+                    ]
+                    result(resultMap)
                 } else {
-                    // Provide a fallback if needed
-                    arRecorderPath = path.absoluteString // or nil
+                    arRecorderPath=videoRecording.url.absoluteString
+                 
                 }
 
-                self.recordingManager?.stopRecording { recordingId in
-                    if let id = recordingId {
-                        recordingIdPath = id
 
-                        // Construct response map
-                        let resultMap: [String: String] = [
-                            "recordingId": id,
-                            "recordingPath": arRecorderPath ?? ""
-                        ]
-
-                        // Send to Flutter
-                        result(resultMap)
-                    } else {
-                        // Send error or null
-                        result(FlutterError(code: "RECORDING_FAILED", message: "Recording failed or not started", details: nil))
-                    }
-                }
             }
 
         
@@ -282,10 +229,5 @@ class FlutterArkitView: NSObject, FlutterPlatformView, RenderARDelegate, RecordA
         }
         sceneView.scene = SCNScene() // reset scene
     }
-
-//    func onDispose(_ result: FlutterResult) {
-//        sceneView.session.pause()
-//        channel.setMethodCallHandler(nil)
-//        result(nil)
-//    }
 }
+

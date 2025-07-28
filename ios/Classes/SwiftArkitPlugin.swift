@@ -2,6 +2,7 @@ import ARKit
 import Flutter
 import UIKit
 
+
 public class SwiftArkitPlugin: NSObject, FlutterPlugin {
     public static var registrar: FlutterPluginRegistrar? = nil
 
@@ -76,15 +77,7 @@ let minFrameInterval: TimeInterval = 1.0 / 15.0
     func setActiveSceneView(_ sceneView: ARSCNView) {
         print("CameraStreamHandler: Setting active scene view")
         activeSceneView = sceneView
-let config = ARWorldTrackingConfiguration()
-    if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
-        config.frameSemantics.insert(.sceneDepth)
-        print("✅ sceneDepth enabled")
-    } else {
-        print("❌ sceneDepth not supported")
-    }
 
-    sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
 
         if eventSink != nil && displayLink == nil {
             print("Camera Stream Handler: Starting camera streaming")

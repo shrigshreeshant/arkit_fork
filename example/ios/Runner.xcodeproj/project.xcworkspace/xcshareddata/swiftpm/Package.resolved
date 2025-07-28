@@ -1,0 +1,24 @@
+{
+  "originHash" : "cd8c1cd343a58341b57985c02041a13a692ab80cfa5fd2aa2675b8e1ce26bfbd",
+  "pins" : [
+    {
+      "identity" : "multicastdelegate",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/v-grigoriev/MulticastDelegate.git",
+      "state" : {
+        "revision" : "d650db9f294d2ebeab9e48e1825b6a16af860a62",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "scnrecorder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gorastudio-git/SCNRecorder",
+      "state" : {
+        "revision" : "795dc264708c814a4ce6041e605e125f2d663123",
+        "version" : "2.9.0"
+      }
+    }
+  ],
+  "version" : 3
+}

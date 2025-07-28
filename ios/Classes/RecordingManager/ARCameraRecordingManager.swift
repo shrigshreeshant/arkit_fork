@@ -16,7 +16,7 @@ class ARCameraRecordingManager: NSObject {
     private var thumbnailPath: String? = nil
     private var session : ARSession? = nil
     private var count: Int = 0
-    private var renderer: Renderer? = nil
+
     
     private let depthRecorder = DepthRecorder()
     // both fullRgbVideoRecorders will be initialized in configureSession
