@@ -165,7 +165,7 @@ extension FlutterArkitView {
                 let z = translation["z"] as? Double
             {
                 animateNodePositionWithAction(
-                    foundNodes.first!, to: startVec, duration: 0.15)
+                    foundNodes.first!, to: startVec, duration: 0.3)
 
                 print("[onUpdateNode] Node '\(nodeNames)' translated by x:\(x), y:\(y), z:\(z)")
                 
