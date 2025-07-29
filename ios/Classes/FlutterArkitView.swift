@@ -11,6 +11,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     let channel: FlutterMethodChannel
     var cameraStreamEventSink: FlutterEventSink?
     var displayLink: CADisplayLink?
+    var recordingManger: ARCameraRecordingManager?=nil
 
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
@@ -22,6 +23,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger
     ) {
         sceneView = ARSCNView(frame: frame)
+ 
 
    
        
@@ -147,11 +149,8 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "onStartRecordingVideo":
             arRecordingQueue.async {
                 do {
-                    try self.sceneView.startVideoRecording()
+                    self.recordingManger?.startRecording()
                     print("✅ Video recording started successfully")
-                } catch {
-                    print("❌ Failed to start video recording: \(error.localizedDescription)")
-                    // Handle the error appropriately
                 }
             }
 //            recordingQueue.async {
@@ -159,27 +158,39 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
 //            }
             
         case"onStopRecordingVideo":
-            
-            var arRecorderPath: String?
+            guard let recordingManger=self.recordingManger else {
+                return result("Recording manager not initialized")
+            }
 
-            sceneView.finishVideoRecording { (videoRecording) in
+
+          recordingManger.stopRecording { (recordingId) in
               /* Process the captured video. Main thread. */
-   
+              guard let id=recordingId  else{
+                  print("No Id Found error compiling video")
+                  return
+                
+              }
                 if #available(iOS 16.0, *) {
-                    arRecorderPath=videoRecording.url.path()
-                    print("path: \(arRecorderPath)")
+          
+     
                     let resultMap: [String: String] = [
-                        "recordingId": "id",
-                        "recordingPath": arRecorderPath ?? ""
+                        "recordingId": id,
+          
                     ]
                     result(resultMap)
                 } else {
-                    arRecorderPath=videoRecording.url.absoluteString
+ 
                  
                 }
 
 
             }
+
+            case "startLidarRecording":
+            recordingManger?.startLidarRecording()
+            
+            case "stopLidarRecording":
+            recordingManger?.stopLidarRecording()
 
         
 

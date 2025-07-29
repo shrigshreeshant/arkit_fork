@@ -410,6 +410,41 @@ class ARKitController {
     return _channel.invokeMethod('onUpdateNode', params);
   }
 
+  /// Starts recording LiDAR lidar data.
+  ///
+  /// Returns a [Future] that completes when lidar recording has started.
+  /// Throws a [PlatformException] if lidar recording fails to start.
+  Future<int?> startLidarRecording() async {
+    try {
+      final result = await _channel
+          .invokeMethod<Map<dynamic, dynamic>>('startLidarRecording');
+
+      if (result == null) {
+        throw 'Failed to start lidar recording: No result returned';
+      }
+
+      final lidarDataStartMs = result['lidarDataStartMs'] as int?;
+
+      return lidarDataStartMs;
+    } on PlatformException catch (e) {
+      throw 'Failed to start lidar recording: ${e.message}';
+    }
+  }
+
+  /// Stops the current lidar data recording.
+  ///
+  /// Returns a [Future<bool?>] indicating whether lidar recording stopped.
+  /// Throws a [PlatformException] if stopping the lidar recording fails.
+  Future<bool?> stopLidarRecording() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('stopLidarRecording');
+
+      return result;
+    } on PlatformException catch (e) {
+      throw 'Failed to stop lidar recording: ${e.message}';
+    }
+  }
+
   Future<void> groupNodes(
     List<ARKitNode> nodes,
   ) {

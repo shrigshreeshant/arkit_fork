@@ -7,6 +7,7 @@
 import ARKit
 import CoreLocation
 import Flutter
+import SCNRecorder
 
 @available(iOS 14.0, *)
 class ARCameraRecordingManager: NSObject {
@@ -16,6 +17,7 @@ class ARCameraRecordingManager: NSObject {
     private var thumbnailPath: String? = nil
     private var session : ARSession? = nil
     private var count: Int = 0
+    private var sceneView: ARSCNView? = nil
 
     
     private let depthRecorder = DepthRecorder()
@@ -36,89 +38,43 @@ class ARCameraRecordingManager: NSObject {
     private var recordingId: String?
     var isRecordingRGBVideo: Bool = false
     var isRecordingLidarData: Bool = false
-    
-    
+  
     private var cameraIntrinsic: simd_float3x3?
     private var colorFrameResolution: [Int] = []
     private var depthFrameResolution: [Int] = []
     private var frequency: Int?
     
-    init(session: ARSession) {
+    init(sceneview: ARSCNView) {
         super.init()
-        self.session = session;
-
+        self.session = sceneview.session;
+        self.sceneView = sceneview;
 
         sessionQueue.async {
             self.configureSession()
         }
-        audioRecorderQueue.async {
-            self.setupAudioSession()
-        }
+
     }
     
     deinit {
         sessionQueue.sync {
             session?.pause()
         }
-        audioRecorderQueue.sync {
-            deactivateAudioSession()
-        }
+
         
         print("ARCameraRecordingManager deinitialized")
         
     }
     
     
-    // Capture session object to audio input/output.
-    private(set) var audioCaptureSession: AVCaptureSession?
-    // Output for audio
-    private var audioDataOutput: AVCaptureAudioDataOutput?
+
     
-    // Set up the capture session with audio inputs and outputs.
-    private func setupAudioSession() {
-        do {
-            audioCaptureSession = AVCaptureSession()
-            guard let audioCaptureSession = audioCaptureSession else {
-                throw ConfigurationError.sessionUnavailable
-            }
-            audioCaptureSession.automaticallyConfiguresApplicationAudioSession = false
-            audioCaptureSession.beginConfiguration()
-            try setupAudioCaptureInput()
-            try setupAudioCaptureOutput()
-            audioCaptureSession.commitConfiguration()
-        } catch {
-            print("Unable to configure the audio session.")
-        }
-    }
+
     
     // Set up the camera input (LiDAR) for depth data, video, and audio.
-    private func setupAudioCaptureInput() throws {
-        guard let audioCaptureSession = audioCaptureSession else {
-            throw ConfigurationError.sessionUnavailable
-        }
-        
-        // Set up audio input (microphone)
-        guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
-            throw ConfigurationError.micUnavailable
-        }
-        
-        let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-        audioCaptureSession.addInput(audioInput)  // Add the audio input to the capture session.
-    }
+
     
     // Set up the outputs for video, depth data, and audio.
-    private func setupAudioCaptureOutput() throws{
-        guard let audioCaptureSession = audioCaptureSession else {
-            throw ConfigurationError.sessionUnavailable
-        }
-        
-        // Configure the audio data output.
-        audioDataOutput = AVCaptureAudioDataOutput()
-        guard let audioDataOutput = audioDataOutput else {return}
-        audioDataOutput.setSampleBufferDelegate(self, queue: audioRecorderQueue)
-        audioCaptureSession.addOutput(audioDataOutput)
-        
-    }
+
     private func find4by3VideoFormat() -> ARConfiguration.VideoFormat? {
         let availableFormats = ARWorldTrackingConfiguration.supportedVideoFormats
         for format in availableFormats {
@@ -157,7 +113,7 @@ class ARCameraRecordingManager: NSObject {
         colorFrameResolution = [Int(imageResolution.height), Int(imageResolution.width)]
         
         let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value: colorFrameResolution[0]), AVVideoWidthKey: NSNumber(value: colorFrameResolution[1])]
-        fullRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "rgb recorder queue full")
+      
         trimmedRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "rgb recorder queue trimmed")
     }
 }
@@ -172,11 +128,11 @@ extension ARCameraRecordingManager: ARSessionDelegate {
             
             do {
                 let buffer = frame.capturedImage
-                
-           
-                
-                // Update live RGB preview stream (e.g., for UI)
-                self.rgbStreamer.update(buffer)
+//                
+//           
+//                
+//                // Update live RGB preview stream (e.g., for UI)
+//                self.rgbStreamer.update(buffer)
                 
                 // Skip video processing if not recording
                 guard self.isRecordingRGBVideo else { return }
@@ -189,11 +145,11 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 if self.rgbVideoStartTimeStamp == .zero {
                     self.rgbVideoStartTimeStamp = timeStamp
                 }
-                
+//                
                 self.currentTimeStamp = timeStamp
                 
-                print("**** @Controller: full rgb \(self.numRgbFrames) ****")
-                self.fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
+//                print("**** @Controller: full rgb \(self.numRgbFrames) ****")
+//                self.fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
                 self.numRgbFrames += 1
                 
                 // Depth + Confidence + Camera Info recording
@@ -249,58 +205,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
     }
 }
 
-@available(iOS 14.0, *)
-extension ARCameraRecordingManager: AVCaptureAudioDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        if !isRecordingRGBVideo {
-            return
-        }
-        if output == audioDataOutput {
-            fullRgbVideoRecorder?.updateAudioSample(sampleBuffer)
-        }
-    }
-    
-    func activateAudioSession() throws {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            
-            try audioSession.setCategory(AVAudioSession.Category.playAndRecord,
-                                         mode: .videoRecording,
-                                         options: [.mixWithOthers,
-                                                   .allowBluetoothA2DP,
-                                                   .defaultToSpeaker,
-                                                   .allowAirPlay])
-            
-            if #available(iOS 14.5, *) {
-                // prevents the audio session from being interrupted by a phone call
-                try audioSession.setPrefersNoInterruptionsFromSystemAlerts(true)
-            }
-            
-            
-            // allow system sounds (notifications, calls, music) to play while recording
-            try audioSession.setAllowHapticsAndSystemSoundsDuringRecording(true)
-            audioRecorderQueue.async {
-                self.audioCaptureSession?.startRunning()
-            }
-        } catch let error as NSError {
-            switch error.code {
-            case 561_017_449:
-                throw ConfigurationError.micInUse
-            default:
-                throw ConfigurationError.audioSessionFailedToActivate
-            }
-        }
-    }
-    
-    func deactivateAudioSession() {
-        guard let audioCaptureSession = audioCaptureSession else {
-            return
-        }
-        if(audioCaptureSession.isRunning){
-            audioCaptureSession.stopRunning()
-        }
-    }
-}
+
 
 
 @available(iOS 14.0, *)
@@ -324,13 +229,12 @@ extension ARCameraRecordingManager {
     /// - Runs asynchronously on the session queue.
     func startRecording() {
         var thumbnailBuffer: CVPixelBuffer? = nil
-
-        do {
-            try activateAudioSession()
-        } catch {
-            print("Couldn't activate audio session")
-        }
         
+        guard let sceneView = self.sceneView else {
+            print("Error capturing frame")
+            return
+        }
+        let _ = try? sceneView.startVideoRecording(fileType: .mp4)
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             self.numRgbFrames = 0
@@ -360,10 +264,11 @@ extension ARCameraRecordingManager {
                 return
             }
             self.dirUrl = URL(fileURLWithPath: Helper.getRecordingDataDirectoryPath(recordingId: recordingId))
-            guard let dirUrl = self.dirUrl else {
-                print("Failed to get recording directory URL")
-                return
-            }
+      
+           
+         
+           
+            
             if #available(iOS 16.0, *) {
                 // Safely unwrap required values
                 guard
@@ -374,7 +279,7 @@ extension ARCameraRecordingManager {
                     return
                 }
 
-   self.thumbnailGenerator.getThumbnailPath(
+                self.thumbnailGenerator.getThumbnailPath(
                     pixelBuffer: thumbnailBuffer,
                     toDirectory: dirPath,
                     recordingId: recordingId
@@ -384,8 +289,9 @@ extension ARCameraRecordingManager {
                 // Optionally handle fallback if needed
             }
             
-            self.fullRgbVideoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId)
             self.isRecordingRGBVideo = true
+
+
         }
     }
     
@@ -396,19 +302,39 @@ extension ARCameraRecordingManager {
     /// - Writes metadata file summarizing the recording.
     /// - Executes an optional completion handler with the recording ID.
     func stopRecording(completion: RecordingManagerCompletion?) {
-        deactivateAudioSession()
+        
+        guard let sceneView=self.sceneView ,let  recoridingId = self.recordingId ,let  dirUrl=self.dirUrl else { return }
+        sceneView.finishVideoRecording { videoRecording in
+            let tempURL = videoRecording.url
+            let fileName = "\(recoridingId)_AR.mp4"  // You can make this dynamic if needed
+            let destinationURL = dirUrl.appendingPathComponent(fileName)
+            
+            do {
+                // Remove if file already exists at destination
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    try FileManager.default.removeItem(at: destinationURL)
+                }
+
+                // Move from temp to app directory
+                try FileManager.default.moveItem(at: tempURL, to: destinationURL)
+
+                print("✅ Video saved to: \(destinationURL)")
+            } catch {
+                print("❌ Failed to move video file: \(error)")
+            }
+        }
         
         guard isRecordingRGBVideo else {
             print("Recording hasn't started yet.")
             return
         }
-        
+     
         sessionQueue.async { [weak self] in
-            guard let self = self else { return }
+            guard let self = self,let sceneView=self.sceneView ,let  recoridingId = self.recordingId else { return }
             print("post count: RGB FRAMES\(self.numRgbFrames), LIDAR FRAMES \(self.numLidarFrames)")
             
             self.isRecordingRGBVideo = false
-            self.fullRgbVideoRecorder?.finishRecording()
+       
             
             if self.isRecordingLidarData {
                 self.stopLidarRecording()
