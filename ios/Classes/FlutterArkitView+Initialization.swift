@@ -69,7 +69,7 @@ extension FlutterArkitView {
             print("FlutterArkitView: Running ARSession with configuration")
             sceneView.session.run(configuration!)
         }
-        self.recordingManger = ARCameraRecordingManager(sceneview: sceneView);
+       
     }
 
     func parseDebugOptions(_ arguments: [String: Any]) -> SCNDebugOptions {

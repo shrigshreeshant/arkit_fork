@@ -127,12 +127,12 @@ extension ARCameraRecordingManager: ARSessionDelegate {
             guard let self = self else { return }
             
             do {
-                let buffer = frame.capturedImage
-//                
-//           
+                let buffer = try frame.capturedImage.copy()
+//                r
+//
 //                
 //                // Update live RGB preview stream (e.g., for UI)
-//                self.rgbStreamer.update(buffer)
+                self.rgbStreamer.update(buffer)
                 
                 // Skip video processing if not recording
                 guard self.isRecordingRGBVideo else { return }

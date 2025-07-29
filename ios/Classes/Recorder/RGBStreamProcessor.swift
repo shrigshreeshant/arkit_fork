@@ -79,28 +79,79 @@ class RGBStreamProcessor {
             }
         }
     }
-    
     private func processFrame(_ pixelBuffer: CVPixelBuffer) -> [String: Any]? {
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-            .transformed(by: CGAffineTransform(scaleX: StreamSettings.scale, y: StreamSettings.scale)
-            .rotated(by: StreamSettings.rotation))
+        autoreleasepool {
+            // Step 1: Create CIImage and apply scale + rotation
+            let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+            let transform = CGAffineTransform(scaleX: 0.3, y: 0.3).rotated(by: -.pi / 2)
+            let transformedImage = ciImage.transformed(by: transform)
 
-        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
-            print("RGBStreamProcessor: Failed to create CGImage")
-            return nil
+            // Step 2: Get original extent
+            let extent = transformedImage.extent
+            let originalWidth = extent.width
+            let originalHeight = extent.height
+            let desiredAspectRatio: CGFloat = 1
+
+            // Step 3: Compute crop size maintaining aspect ratio
+            var cropWidth = originalWidth
+            var cropHeight = cropWidth / desiredAspectRatio
+
+            if cropHeight > originalHeight {
+                cropHeight = originalHeight
+                cropWidth = cropHeight * desiredAspectRatio
+            }
+
+            // Step 4: Center crop rectangle
+            let cropX = extent.midX - cropWidth / 2
+            let cropY = extent.midY - cropHeight / 2
+            let cropRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
+
+            // Step 5: Crop image
+            let croppedImage = transformedImage.cropped(to: cropRect)
+
+            // Step 6: Convert to CGImage
+            guard let cgImage = ciContext.createCGImage(croppedImage, from: croppedImage.extent) else {
+                print("RGBStreamProcessor: Failed to create CGImage")
+                return nil
+            }
+
+            // Step 7: Encode to JPEG
+            guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.35) else {
+                print("RGBStreamProcessor: Failed to encode JPEG")
+                return nil
+            }
+
+            // Step 8: Return result
+            return [
+                "frameBytes": FlutterStandardTypedData(bytes: jpegData),
+                "width": Int(cropWidth),
+                "height": Int(cropHeight)
+            ]
         }
-
-        guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: StreamSettings.jpegQuality) else {
-            print("RGBStreamProcessor: Failed to encode JPEG")
-            return nil
-        }
-
-        return [
-            "frameBytes": FlutterStandardTypedData(bytes: jpegData),
-            "width": cgImage.width,
-            "height": cgImage.height
-        ]
     }
+
+
+//    private func processFrame(_ pixelBuffer: CVPixelBuffer) -> [String: Any]? {
+//        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+//            .transformed(by: CGAffineTransform(scaleX: StreamSettings.scale, y: StreamSettings.scale)
+//            .rotated(by: StreamSettings.rotation))
+//
+//        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
+//            print("RGBStreamProcessor: Failed to create CGImage")
+//            return nil
+//        }
+//
+//        guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: StreamSettings.jpegQuality) else {
+//            print("RGBStreamProcessor: Failed to encode JPEG")
+//            return nil
+//        }
+//
+//        return [
+//            "frameBytes": FlutterStandardTypedData(bytes: jpegData),
+//            "width": cgImage.width,
+//            "height": cgImage.height
+//        ]
+//    }
     
     var isStreaming: Bool {
         return isStreamingEnabled

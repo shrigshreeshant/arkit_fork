@@ -11,12 +11,12 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     let channel: FlutterMethodChannel
     var cameraStreamEventSink: FlutterEventSink?
     var displayLink: CADisplayLink?
-    var recordingManger: ARCameraRecordingManager?=nil
+    var recordingManager: ARCameraRecordingManager?=nil
 
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
     let recordingQueue = DispatchQueue(label: "recordingThread", attributes: .concurrent)
-    let arRecordingQueue = DispatchQueue(label: "arRecordingThread", attributes: .concurrent)
+
 
 
     init(
@@ -24,7 +24,13 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     ) {
         sceneView = ARSCNView(frame: frame)
  
-
+        self.recordingManager = ARCameraRecordingManager(sceneview: sceneView);
+        
+        
+        let cameraStreamChannel = FlutterEventChannel(
+            name: "arkit/cameraStream", binaryMessenger: msg)
+        let cameraStreamHandler = CameraStreamHandler(arRecordingManager:recordingManager!)
+        cameraStreamChannel.setStreamHandler(cameraStreamHandler)
    
        
         channel = FlutterMethodChannel(name: "arkit_\(viewId)", binaryMessenger: msg)
@@ -38,15 +44,15 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         sceneView.prepareForRecording()
 
 
-        setupEventChannels(messenger: msg)
+//        setupEventChannels(messenger: msg)
     }
 
     func view() -> UIView { return sceneView }
-    func setupEventChannels(messenger: FlutterBinaryMessenger) {
-        print("FlutterArkitView: Setting up event channels")
-        CameraStreamHandler.shared.setActiveSceneView(sceneView)
-        print("FlutterArkitView: Event channels set up")
-    }
+//    func setupEventChannels(messenger: FlutterBinaryMessenger) {
+//        print("FlutterArkitView: Setting up event channels")
+//        CameraStreamHandler.shared.setActiveSceneView(sceneView)
+//        print("FlutterArkitView: Event channels set up")
+//    }
 
     func onMethodCalled(_ call: FlutterMethodCall, _ result:@escaping FlutterResult) {
         let arguments = call.arguments as? [String: Any]
@@ -147,23 +153,17 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "cameraPosition":
             onGetCameraPosition(result)
         case "onStartRecordingVideo":
-            arRecordingQueue.async {
-                do {
-                    self.recordingManger?.startRecording()
-                    print("✅ Video recording started successfully")
-                }
+            do {
+                self.recordingManager?.startRecording()
+                print("✅ Video recording started successfully")
             }
-//            recordingQueue.async {
-//                self.recordingManager?.startRecording()
-//            }
-            
         case"onStopRecordingVideo":
-            guard let recordingManger=self.recordingManger else {
+            guard let recordingManager=self.recordingManager else {
                 return result("Recording manager not initialized")
             }
 
 
-          recordingManger.stopRecording { (recordingId) in
+          recordingManager.stopRecording { (recordingId) in
               /* Process the captured video. Main thread. */
               guard let id=recordingId  else{
                   print("No Id Found error compiling video")
@@ -187,10 +187,10 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             }
 
             case "startLidarRecording":
-            recordingManger?.startLidarRecording()
+            recordingManager?.startLidarRecording()
             
             case "stopLidarRecording":
-            recordingManger?.stopLidarRecording()
+            recordingManager?.stopLidarRecording()
 
         
 

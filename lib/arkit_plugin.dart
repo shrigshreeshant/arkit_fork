@@ -47,3 +47,4 @@ export 'package:arkit_plugin/src/widget/arkit_scene_view.dart';
 export 'package:arkit_plugin/src/widget/arkit_reference_image.dart';
 export 'package:arkit_plugin/src/widget/arkit_world_alignment.dart';
 export 'package:arkit_plugin/src/arkit_stream.dart';
+export 'package:arkit_plugin/src/models/ar_frame.dart';
