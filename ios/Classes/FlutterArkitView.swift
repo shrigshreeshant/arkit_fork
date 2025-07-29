@@ -44,15 +44,10 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         sceneView.prepareForRecording()
 
 
-//        setupEventChannels(messenger: msg)
+
     }
 
     func view() -> UIView { return sceneView }
-//    func setupEventChannels(messenger: FlutterBinaryMessenger) {
-//        print("FlutterArkitView: Setting up event channels")
-//        CameraStreamHandler.shared.setActiveSceneView(sceneView)
-//        print("FlutterArkitView: Event channels set up")
-//    }
 
     func onMethodCalled(_ call: FlutterMethodCall, _ result:@escaping FlutterResult) {
         let arguments = call.arguments as? [String: Any]

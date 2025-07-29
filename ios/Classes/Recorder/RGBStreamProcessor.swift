@@ -90,7 +90,7 @@ class RGBStreamProcessor {
             let extent = transformedImage.extent
             let originalWidth = extent.width
             let originalHeight = extent.height
-            let desiredAspectRatio: CGFloat = 1
+            let desiredAspectRatio: CGFloat = 0.9225
 
             // Step 3: Compute crop size maintaining aspect ratio
             var cropWidth = originalWidth
@@ -130,29 +130,6 @@ class RGBStreamProcessor {
         }
     }
 
-
-//    private func processFrame(_ pixelBuffer: CVPixelBuffer) -> [String: Any]? {
-//        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-//            .transformed(by: CGAffineTransform(scaleX: StreamSettings.scale, y: StreamSettings.scale)
-//            .rotated(by: StreamSettings.rotation))
-//
-//        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
-//            print("RGBStreamProcessor: Failed to create CGImage")
-//            return nil
-//        }
-//
-//        guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: StreamSettings.jpegQuality) else {
-//            print("RGBStreamProcessor: Failed to encode JPEG")
-//            return nil
-//        }
-//
-//        return [
-//            "frameBytes": FlutterStandardTypedData(bytes: jpegData),
-//            "width": cgImage.width,
-//            "height": cgImage.height
-//        ]
-//    }
-    
     var isStreaming: Bool {
         return isStreamingEnabled
     }
