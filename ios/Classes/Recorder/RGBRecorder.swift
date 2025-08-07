@@ -58,19 +58,19 @@ class RGBRecorder: NSObject, Recorder {
             
             
             // Audio settings.
-            let audioSettings: [String: Any] = [
-                AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVNumberOfChannelsKey: 2,
-                AVSampleRateKey: 44100,
-                AVEncoderBitRateKey: 64000
-            ]
-            let assetAudioWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
-            assetAudioWriterInput.expectsMediaDataInRealTime = true
-            assetWriter.add(assetAudioWriterInput)
+//            let audioSettings: [String: Any] = [
+//                AVFormatIDKey: kAudioFormatMPEG4AAC,
+//                AVNumberOfChannelsKey: 2,
+//                AVSampleRateKey: 44100,
+//                AVEncoderBitRateKey: 64000
+//            ]
+//            let assetAudioWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
+//            assetAudioWriterInput.expectsMediaDataInRealTime = true
+//            assetWriter.add(assetAudioWriterInput)
             
             self.assetWriter = assetWriter
             self.assetWriterVideoInput = assetWriterVideoInput
-            self.assetWriterAudioInput = assetAudioWriterInput
+//            self.assetWriterAudioInput = assetAudioWriterInput
             self.assetWriterInputPixelBufferAdaptor = assetWriterInputPixelBufferAdaptor
         }
     }

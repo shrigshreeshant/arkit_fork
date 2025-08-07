@@ -92,11 +92,7 @@ class ARCameraRecordingManager: NSObject {
         
         let configuration = ARWorldTrackingConfiguration()
         
-        // Enable only scene depth
-        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
-            configuration.frameSemantics = .sceneDepth
-        }
-        
+
         // Optionally, set the video format if available
         if let format = find4by3VideoFormat() {
             configuration.videoFormat = format
@@ -115,6 +111,7 @@ class ARCameraRecordingManager: NSObject {
         let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value: colorFrameResolution[0]), AVVideoWidthKey: NSNumber(value: colorFrameResolution[1])]
       
         trimmedRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "rgb recorder queue trimmed")
+        fullRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "ful rgb recorder queue")
     }
 }
 private let renderQueue = DispatchQueue(label: "com.myapp.rgbRenderQueue", qos: .userInitiated)
@@ -148,8 +145,8 @@ extension ARCameraRecordingManager: ARSessionDelegate {
 //                
                 self.currentTimeStamp = timeStamp
                 
-//                print("**** @Controller: full rgb \(self.numRgbFrames) ****")
-//                self.fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
+                print("**** @Controller: full rgb \(self.numRgbFrames) ****")
+                self.fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
                 self.numRgbFrames += 1
                 
                 // Depth + Confidence + Camera Info recording
@@ -171,6 +168,9 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 
                 print("**** @Controller: trimmed rgb \(self.numLidarFrames) ****")
                 self.trimmedRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
+                
+
+                
                 
                 print("**** @Controller: depth \(self.numLidarFrames) ****")
                 self.depthRecorder.update(depthMap)
@@ -227,14 +227,16 @@ extension ARCameraRecordingManager {
     /// - Initializes frame count and recording ID.
     /// - Prepares the RGB video recorder for recording in the appropriate directory.
     /// - Runs asynchronously on the session queue.
-    func startRecording() {
-        var thumbnailBuffer: CVPixelBuffer? = nil
+    func startRecording(isArEnabled:Bool) {
+
         
         guard let sceneView = self.sceneView else {
             print("Error capturing frame")
             return
         }
-        let _ = try? sceneView.startVideoRecording(fileType: .mp4)
+        if(isArEnabled) {
+            let _ = try? sceneView.startVideoRecording(fileType: .mp4)
+        }
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             self.numRgbFrames = 0
@@ -242,7 +244,7 @@ extension ARCameraRecordingManager {
             
             self.rgbVideoStartTimeStamp = .zero
             if let currentFrame = session?.currentFrame {
-                thumbnailBuffer=currentFrame.capturedImage
+
                 cameraIntrinsic = currentFrame.camera.intrinsics
                 if let depthData = currentFrame.sceneDepth {
                     
@@ -264,31 +266,12 @@ extension ARCameraRecordingManager {
                 return
             }
             self.dirUrl = URL(fileURLWithPath: Helper.getRecordingDataDirectoryPath(recordingId: recordingId))
-      
-           
-         
-           
-            
-            if #available(iOS 16.0, *) {
-                // Safely unwrap required values
-                guard
-                    let thumbnailBuffer = thumbnailBuffer,
-                    let dirPath = self.dirUrl?.path()
-                else {
-                    print("❌ Thumbnail generation skipped: Missing pixel buffer or directory path.")
-                    return
-                }
-
-                self.thumbnailGenerator.getThumbnailPath(
-                    pixelBuffer: thumbnailBuffer,
-                    toDirectory: dirPath,
-                    recordingId: recordingId
-                )
-            } else {
-                print("⚠️ Thumbnail generation is not supported on iOS versions below 16.0.")
-                // Optionally handle fallback if needed
-            }
-            
+            guard let dirUrl = self.dirUrl else {
+                     print("Failed to get recording directory URL")
+                     return
+                 }
+                 
+            self.fullRgbVideoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId)
             self.isRecordingRGBVideo = true
 
 
@@ -301,10 +284,10 @@ extension ARCameraRecordingManager {
     /// - If LiDAR data recording is active, finishes those recordings as well.
     /// - Writes metadata file summarizing the recording.
     /// - Executes an optional completion handler with the recording ID.
-    func stopRecording(completion: RecordingManagerCompletion?) {
+    func stopRecording(completion: RecordingManagerCompletion?,isArEnabled:Bool) {
         
         guard let sceneView=self.sceneView ,let  recoridingId = self.recordingId ,let  dirUrl=self.dirUrl else { return }
-        sceneView.finishVideoRecording { videoRecording in
+        if(isArEnabled){    sceneView.finishVideoRecording { videoRecording in
             let tempURL = videoRecording.url
             let fileName = "\(recoridingId)_AR.mp4"  // You can make this dynamic if needed
             let destinationURL = dirUrl.appendingPathComponent(fileName)
@@ -321,7 +304,7 @@ extension ARCameraRecordingManager {
                 print("✅ Video saved to: \(destinationURL)")
             } catch {
                 print("❌ Failed to move video file: \(error)")
-            }
+           } }
         }
         
         guard isRecordingRGBVideo else {
@@ -334,6 +317,7 @@ extension ARCameraRecordingManager {
             print("post count: RGB FRAMES\(self.numRgbFrames), LIDAR FRAMES \(self.numLidarFrames)")
             
             self.isRecordingRGBVideo = false
+            self.fullRgbVideoRecorder?.finishRecording()
        
             
             if self.isRecordingLidarData {

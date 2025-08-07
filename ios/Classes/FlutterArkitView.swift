@@ -148,17 +148,29 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "cameraPosition":
             onGetCameraPosition(result)
         case "onStartRecordingVideo":
-            do {
-                self.recordingManager?.startRecording()
-                print("✅ Video recording started successfully")
+            guard let args = arguments,
+                  let isArEnabled = args["isArEnabled"] as? Bool else {
+                print("❌ Invalid arguments for onStartRecordingVideo")
+                return
             }
+
+       
+                 recordingManager?.startRecording(isArEnabled: isArEnabled)
+                print("✅ Video recording started successfully")
+      
         case"onStopRecordingVideo":
+            
+            guard let args = arguments,
+                  let isArEnabled = args["isArEnabled"] as? Bool else {
+                print("❌ Invalid arguments for onStartRecordingVideo")
+                return
+            }
             guard let recordingManager=self.recordingManager else {
                 return result("Recording manager not initialized")
             }
 
 
-          recordingManager.stopRecording { (recordingId) in
+            recordingManager.stopRecording (completion: { (recordingId) in
               /* Process the captured video. Main thread. */
               guard let id=recordingId  else{
                   print("No Id Found error compiling video")
@@ -179,8 +191,8 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
                 }
 
 
-            }
-
+            },isArEnabled: isArEnabled
+)
             case "startLidarRecording":
             recordingManager?.startLidarRecording()
             

@@ -65,6 +65,8 @@ extension FlutterArkitView {
         sceneView.debugOptions = parseDebugOptions(arguments)
         configuration = parseConfiguration(arguments)
         configuration?.providesAudioData=true
+        configuration?.frameSemantics = [.sceneDepth,.personSegmentation]
+        
         if configuration != nil {
             print("FlutterArkitView: Running ARSession with configuration")
             sceneView.session.run(configuration!)

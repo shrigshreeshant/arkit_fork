@@ -334,12 +334,16 @@ class ARKitController {
     _channel.invokeMethod<void>('dispose');
   }
 
-  Future<void> startRecording() async {
-    return _channel.invokeMethod('onStartRecordingVideo');
+  Future<void> startRecording(bool isArEnabled) async {
+    final params = {"isArEnabled": isArEnabled};
+    return _channel.invokeMethod('onStartRecordingVideo', params);
   }
 
-  Future<ARVideoPath> stopRecordingVideo() async {
-    final rawResult = await _channel.invokeMethod('onStopRecordingVideo');
+  Future<ARVideoPath> stopRecordingVideo(bool isArEnabled) async {
+    final params = {"isArEnabled": isArEnabled};
+
+    final rawResult =
+        await _channel.invokeMethod('onStopRecordingVideo', params);
     print("Native result: $rawResult");
 
     if (rawResult is Map) {
