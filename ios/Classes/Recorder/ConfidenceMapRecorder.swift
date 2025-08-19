@@ -66,7 +66,7 @@ class ConfidenceMapRecorder: Recorder {
         
     }
     
-    func finishRecording() {
+    func finishRecording(completion: (() -> Void)? = nil) {
         confidenceMapRecorderQueue.async {
             if self.fileHandle != nil {
                 self.fileHandle!.closeFile()

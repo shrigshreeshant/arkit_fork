@@ -234,49 +234,54 @@ extension ARCameraRecordingManager {
             print("Error capturing frame")
             return
         }
-        if(isArEnabled) {
+        self.recordingId = Helper.getRecordingId()
+        guard let recordingId = self.recordingId else {
+            print("Failed to get recording ID")
+            return
+        }
+        self.dirUrl = URL(fileURLWithPath: Helper.getRecordingDataDirectoryPath(recordingId: recordingId))
             let _ = try? sceneView.startVideoRecording(fileType: .mp4)
-        }
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            self.numRgbFrames = 0
-            self.numLidarFrames = 0
-            
-            self.rgbVideoStartTimeStamp = .zero
-            if let currentFrame = session?.currentFrame {
-
-                cameraIntrinsic = currentFrame.camera.intrinsics
-                if let depthData = currentFrame.sceneDepth {
-                    
-                    let depthMap: CVPixelBuffer = depthData.depthMap
-                    let height = CVPixelBufferGetHeight(depthMap)
-                    let width = CVPixelBufferGetWidth(depthMap)
-                    
-                    depthFrameResolution = [height, width]
-                } else {
-                    print("Unable to get depth resolution.")
-                }
-            }
         
-            print("pre count: RGB FRAMES \(self.numRgbFrames), LIDAR FRAMES \(self.numRgbFrames)")
+        if(isArEnabled) {
+            sessionQueue.async { [weak self] in
+                guard let self = self else { return }
+                self.numRgbFrames = 0
+                self.numLidarFrames = 0
+                
+                self.rgbVideoStartTimeStamp = .zero
+                if let currentFrame = session?.currentFrame {
+
+                    cameraIntrinsic = currentFrame.camera.intrinsics
+                    if let depthData = currentFrame.sceneDepth {
+                        
+                        let depthMap: CVPixelBuffer = depthData.depthMap
+                        let height = CVPixelBufferGetHeight(depthMap)
+                        let width = CVPixelBufferGetWidth(depthMap)
+                        
+                        depthFrameResolution = [height, width]
+                    } else {
+                        print("Unable to get depth resolution.")
+                    }
+                }
             
-            self.recordingId = Helper.getRecordingId()
-            guard let recordingId = self.recordingId else {
-                print("Failed to get recording ID")
-                return
+                print("pre count: RGB FRAMES \(self.numRgbFrames), LIDAR FRAMES \(self.numRgbFrames)")
+                
+         
+          
+          
+                guard let dirUrl = self.dirUrl else {
+                         print("Failed to get recording directory URL")
+                         return
+                     }
+                     
+                self.fullRgbVideoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId)
+      
+
+
             }
-            self.dirUrl = URL(fileURLWithPath: Helper.getRecordingDataDirectoryPath(recordingId: recordingId))
-            guard let dirUrl = self.dirUrl else {
-                     print("Failed to get recording directory URL")
-                     return
-                 }
-                 
-            self.fullRgbVideoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId)
-            self.isRecordingRGBVideo = true
-
-
         }
-    }
+        self.isRecordingRGBVideo = true
+        }
     
     /// Stops the RGB video recording session.
     /// - Deactivates the audio session.
@@ -284,50 +289,178 @@ extension ARCameraRecordingManager {
     /// - If LiDAR data recording is active, finishes those recordings as well.
     /// - Writes metadata file summarizing the recording.
     /// - Executes an optional completion handler with the recording ID.
-    func stopRecording(completion: RecordingManagerCompletion?,isArEnabled:Bool) {
-        
-        guard let sceneView=self.sceneView ,let  recoridingId = self.recordingId ,let  dirUrl=self.dirUrl else { return }
-        if(isArEnabled){    sceneView.finishVideoRecording { videoRecording in
-            let tempURL = videoRecording.url
-            let fileName = "\(recoridingId)_AR.mp4"  // You can make this dynamic if needed
-            let destinationURL = dirUrl.appendingPathComponent(fileName)
-            
-            do {
-                // Remove if file already exists at destination
-                if FileManager.default.fileExists(atPath: destinationURL.path) {
-                    try FileManager.default.removeItem(at: destinationURL)
-                }
-
-                // Move from temp to app directory
-                try FileManager.default.moveItem(at: tempURL, to: destinationURL)
-
-                print("✅ Video saved to: \(destinationURL)")
-            } catch {
-                print("❌ Failed to move video file: \(error)")
-           } }
-        }
-        
-        guard isRecordingRGBVideo else {
-            print("Recording hasn't started yet.")
+//    func stopRecording(completion: RecordingManagerCompletion?,isArEnabled:Bool) {
+//        
+//        guard let sceneView=self.sceneView ,let  recoridingId = self.recordingId ,let  dirUrl=self.dirUrl else { return }
+//        if(isArEnabled){    sceneView.finishVideoRecording { videoRecording in
+//            let tempURL = videoRecording.url
+//            let fileName = "\(recoridingId)_AR.mp4"  // You can make this dynamic if needed
+//            let destinationURL = dirUrl.appendingPathComponent(fileName)
+//            
+//            do {
+//                // Remove if file already exists at destination
+//                if FileManager.default.fileExists(atPath: destinationURL.path) {
+//                    try FileManager.default.removeItem(at: destinationURL)
+//                }
+//
+//                // Move from temp to app directory
+//                try FileManager.default.moveItem(at: tempURL, to: destinationURL)
+//                let arVideoURL = dirUrl.appendingPathComponent("\(self.recordingId!)_AR.mp4")
+//                let rgbVideoURL = dirUrl.appendingPathComponent("\(self.recordingId!).mp4")
+//
+//                   
+//                   // Check if both files exist
+//                   guard FileManager.default.fileExists(atPath: arVideoURL.path),
+//                         FileManager.default.fileExists(atPath: rgbVideoURL.path) else {
+//                       print("❌ One or both video files don't exist")
+//         
+//                       return
+//                   }
+//                let audioUtils=AudioUtils()
+//                   
+//                   audioUtils.updateRGBVideoWithAudio(
+//                       from: arVideoURL,
+//                       rgbVideoURL: rgbVideoURL
+//                   ) { result in
+//                       DispatchQueue.main.async {
+//                           switch result {
+//                           case .success(let updatedURL):
+//                               print("✅ RGB video updated with AR audio: \(updatedURL)")
+//                           case .failure(let error):
+//                               print("❌ Audio update failed: \(error)")
+//                           }
+//
+//                       }
+//                   }
+//                print("✅ Video saved to: \(destinationURL)")
+//            } catch {
+//                print("❌ Failed to move video file: \(error)")
+//           } }
+//        }
+//        
+//        guard isRecordingRGBVideo else {
+//            print("Recording hasn't started yet.")
+//            return
+//        }
+//     
+//        sessionQueue.async { [weak self] in
+//            guard let self = self,let sceneView=self.sceneView ,let  recoridingId = self.recordingId else { return }
+//            print("post count: RGB FRAMES\(self.numRgbFrames), LIDAR FRAMES \(self.numLidarFrames)")
+//            
+//            self.isRecordingRGBVideo = false
+//            self.fullRgbVideoRecorder?.finishRecording()
+//       
+//            
+//            if self.isRecordingLidarData {
+//                self.stopLidarRecording()
+//            }
+//            
+//            self.writeMetadataToFile()
+//            completion?(self.recordingId)
+//        }
+//  
+//        
+//      
+//    }
+    func stopRecording(completion: RecordingManagerCompletion?, isArEnabled: Bool) {
+        guard let sceneView = self.sceneView,
+              let recordingId = self.recordingId,
+              let dirUrl = self.dirUrl else {
             return
         }
-     
-        sessionQueue.async { [weak self] in
-            guard let self = self,let sceneView=self.sceneView ,let  recoridingId = self.recordingId else { return }
-            print("post count: RGB FRAMES\(self.numRgbFrames), LIDAR FRAMES \(self.numLidarFrames)")
-            
-            self.isRecordingRGBVideo = false
-            self.fullRgbVideoRecorder?.finishRecording()
-       
-            
+
+        guard isRecordingRGBVideo else {
+            print("Recording hasn't started yet.")
+            completion?(recordingId)
+            return
+        }
+
+        // Mark RGB recording as stopped
+        self.isRecordingRGBVideo = false
+
+        // URLs for final videos
+        let rgbVideoURL = dirUrl.appendingPathComponent("\(recordingId).mp4")
+        let arVideoURL = dirUrl.appendingPathComponent("\(recordingId)_AR.mp4")
+
+        // Use DispatchGroup to synchronize finishing both recorders
+        let group = DispatchGroup()
+
+        // Finish AR video if enabled
+
+        group.enter()
+            sceneView.finishVideoRecording { videoRecording in
+                defer { group.leave() }
+
+                do {
+                    let destinationURL = isArEnabled ? arVideoURL : rgbVideoURL
+                    let tempURL = videoRecording.url
+
+                    // Remove existing file if necessary
+                    if FileManager.default.fileExists(atPath: arVideoURL.path) {
+                        try FileManager.default.removeItem(at: arVideoURL)
+                    }
+
+                    // Move temp AR video to destination
+                    try FileManager.default.moveItem(at: tempURL, to: destinationURL)
+                    print("✅ AR Video saved: \(arVideoURL)")
+                    completion?(recordingId)
+                } catch {
+                    print("❌ Failed to move AR video file: \(error)")
+                }
+            }
+        
+
+        // Finish RGB video
+        if(isArEnabled){
+            group.enter()
+            self.fullRgbVideoRecorder?.finishRecording { [weak self] in
+                defer { group.leave() }
+                guard let self = self else { return }
+                print("✅ RGB Video finished: \(rgbVideoURL)")
+            }
+            // After both videos are done, merge AR audio into RGB
+            group.notify(queue: .main) { [weak self] in
+                guard let self = self else { return }
+
+                // Check both files exist
+                guard FileManager.default.fileExists(atPath: rgbVideoURL.path) else {
+                    print("❌ RGB video file does not exist")
+                    completion?(recordingId)
+                    return
+                }
+
+                if FileManager.default.fileExists(atPath: arVideoURL.path) {
+                    print("🔹 Starting RGB video update with AR audio")
+                    let audioUtils = AudioUtils()
+                    audioUtils.updateRGBVideoWithAudio(from: arVideoURL, rgbVideoURL: rgbVideoURL) { result in
+                        DispatchQueue.main.async {
+                            switch result {
+                            case .success(let updatedURL):
+                                print("✅ RGB video updated with AR audio: \(updatedURL)")
+                            case .failure(let error):
+                                print("❌ Audio update failed: \(error)")
+                            }
+
+                            // Call the final completion
+                            completion?(recordingId)
+                        }
+                    }
+                } else {
+                    // No AR video, just call completion
+                    completion?(recordingId)
+                }
+        }
+
+            // Stop LIDAR recording if needed
             if self.isRecordingLidarData {
                 self.stopLidarRecording()
             }
-            
+
+            // Write metadata
             self.writeMetadataToFile()
-            completion?(self.recordingId)
         }
     }
+
     
     /// Starts LiDAR depth data recording.
     /// - Requires RGB recording to be active.

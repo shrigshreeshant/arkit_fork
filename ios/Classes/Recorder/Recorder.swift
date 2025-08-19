@@ -12,5 +12,6 @@ protocol Recorder {
     
     func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String)
     func update(_: T, timestamp: CMTime?)
-    func finishRecording()
+    
+        func finishRecording(completion: (() -> Void)?)
 }

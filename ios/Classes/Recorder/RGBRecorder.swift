@@ -126,25 +126,32 @@ class RGBRecorder: NSObject, Recorder {
         }
     }
     
-    func finishRecording()  {
-        
+    func finishRecording(completion: (() -> Void)? = nil) {
         rgbRecorderQueue.async {
-            
             guard let assetWriter = self.assetWriter else {
-                print("Error!")
+                print("Error: assetWriter is nil!")
+                DispatchQueue.main.async { completion?() }
                 return
             }
-            
+
             assetWriter.finishWriting { [weak self] in
-                guard let self = self else { return }
-                
+                guard let self = self else {
+                    DispatchQueue.main.async { completion?() }
+                    return
+                }
+
                 if let videoURL = self.assetWriter?.outputURL {
-                    
-                    print("RGB video saved at path: \(videoURL.path)")
-                    
-                    self.assetWriter = nil
+                    print("✅ RGB video saved at path: \(videoURL.path)")
+                }
+
+                self.assetWriter = nil
+
+                // Call completion on main queue
+                DispatchQueue.main.async {
+                    completion?()
                 }
             }
         }
     }
+
 }

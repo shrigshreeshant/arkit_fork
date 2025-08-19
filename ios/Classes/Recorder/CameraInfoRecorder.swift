@@ -79,7 +79,7 @@ class CameraInfoRecorder: Recorder {
         }
     }
     
-    func finishRecording() {
+    func finishRecording(completion: (() -> Void)? = nil) {
         cameraInfoRecorderQueue.async {
             if self.fileHandle != nil {
                 self.fileHandle!.closeFile()

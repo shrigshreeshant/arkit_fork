@@ -53,7 +53,7 @@ class DepthRecorder: Recorder {
         }
     }
     
-    func finishRecording() {
+    func finishRecording(completion: (() -> Void)? = nil) {
         depthRecorderQueue.async {
             if self.fileHandle != nil {
                 self.fileHandle!.closeFile()
