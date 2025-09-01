@@ -180,11 +180,8 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
                 if #available(iOS 16.0, *) {
           
      
-                    let resultMap: [String: String] = [
-                        "recordingId": id,
-          
-                    ]
-                    result(resultMap)
+                
+                    result(id)
                 } else {
  
                  
