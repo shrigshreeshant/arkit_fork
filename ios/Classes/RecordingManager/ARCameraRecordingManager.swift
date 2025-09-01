@@ -379,8 +379,8 @@ extension ARCameraRecordingManager {
         self.isRecordingRGBVideo = false
 
         // URLs for final videos
-        let rgbVideoURL = dirUrl.appendingPathComponent("\(recordingId).mp4")
-        let arVideoURL = dirUrl.appendingPathComponent("\(recordingId)_AR.mp4")
+        let rgbVideoURL = dirUrl.appendingPathComponent("\(recordingId)_regular.mp4")
+        let arVideoURL = dirUrl.appendingPathComponent("\(recordingId)_ar.mp4")
 
         // Use DispatchGroup to synchronize finishing both recorders
         let group = DispatchGroup()
