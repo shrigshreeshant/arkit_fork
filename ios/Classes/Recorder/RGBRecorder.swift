@@ -39,7 +39,7 @@ class RGBRecorder: NSObject, Recorder {
             let suffix = label.contains("trimmed") ? "_trimmed" : ""
             
             let fileName = (recordingId + suffix as NSString).appendingPathExtension(fileExtension)!
-            let outputFilePath = (dirPath as NSString).appendingPathComponent(fileName)
+            let outputFilePath = (dirPath as NSString).appendingPathComponent(fileName+"_regular")
             let outputFileUrl = URL(fileURLWithPath: outputFilePath)
             
             guard let assetWriter = try? AVAssetWriter(url: outputFileUrl, fileType: .mp4) else {
