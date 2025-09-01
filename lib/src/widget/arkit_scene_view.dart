@@ -339,19 +339,14 @@ class ARKitController {
     return _channel.invokeMethod('onStartRecordingVideo', params);
   }
 
-  Future<ARVideoPath> stopRecordingVideo(bool isArEnabled) async {
+  Future<String> stopRecordingVideo(bool isArEnabled) async {
     final params = {"isArEnabled": isArEnabled};
 
     final rawResult =
         await _channel.invokeMethod('onStopRecordingVideo', params);
     print("Native result: $rawResult");
 
-    if (rawResult is Map) {
-      final result = rawResult.cast<String, dynamic>();
-      return ARVideoPath.fromMap(result);
-    } else {
-      throw Exception("Invalid response from native iOS: $rawResult");
-    }
+    return rawResult;
   }
 
   Future<void> add(
