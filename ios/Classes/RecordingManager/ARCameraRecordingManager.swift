@@ -428,7 +428,9 @@ extension ARCameraRecordingManager {
                     // Move temp AR video to destination
                     try FileManager.default.moveItem(at: tempURL, to: destinationURL)
                     print("✅ AR Video saved: \(arVideoURL)")
-//                    completion?(recordingId)
+                    if(!isArEnabled) {
+                        completion?(recordingId)
+                    }
                 } catch {
                     print("❌ Failed to move AR video file: \(error)")
                 }
@@ -484,7 +486,7 @@ extension ARCameraRecordingManager {
             // Write metadata
             self.writeMetadataToFile()
         }
-        else{completion?(recordingId)}
+       
     }
 
     

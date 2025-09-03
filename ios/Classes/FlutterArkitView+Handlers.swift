@@ -185,7 +185,7 @@ extension FlutterArkitView {
         // Step 2: Scale factor
         let (minVec, maxVec) = node.boundingBox
         let originalLength = maxVec.x - minVec.x
-        let scaleFactor = length / originalLength * 1.27
+        let scaleFactor = length / originalLength * 1.24
 
         // Step 3: Compute rotation quaternion
         let simdDir = simd_normalize(simd_float3(direction))

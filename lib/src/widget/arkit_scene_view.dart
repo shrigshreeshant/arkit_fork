@@ -348,6 +348,11 @@ class ARKitController {
     return rawResult;
   }
 
+  Future<void> toggleFlash(bool toogleTorch) {
+    final params = {"toggleFlash": toogleTorch};
+    return _channel.invokeMethod('toggleFlash', params);
+  }
+
   Future<void> add(
     ARKitNode node, {
     String? parentNodeName,

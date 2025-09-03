@@ -148,9 +148,9 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "cameraPosition":
             
             onGetCameraPosition(result)
-        case "toogleFlash":
+        case "toggleFlash":
             guard let args = arguments,
-                  let toggle = args["toogleFlash"] as? Bool else {
+                  let toggle = args["toggleFlash"] as? Bool else {
    
                 return
             }
