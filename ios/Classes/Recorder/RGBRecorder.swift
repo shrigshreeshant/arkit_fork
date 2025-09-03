@@ -36,7 +36,7 @@ class RGBRecorder: NSObject, Recorder {
             self.count = 0
             
             let label = self.rgbRecorderQueue.label
-            let suffix = label.contains("trimmed") ? "_trimmed" : "regular"
+            let suffix = label.contains("trimmed") ? "_trimmed" : "_regular"
             
             let fileName = (recordingId + suffix as NSString).appendingPathExtension(fileExtension)!
             let outputFilePath = (dirPath as NSString).appendingPathComponent(fileName)
@@ -105,13 +105,16 @@ class RGBRecorder: NSObject, Recorder {
                         print("Waiting for assetWriter...")
                         usleep(10)
                     }
+                    let processBuffer = ImageUtils.processPixelBuffer(buffer)
                     
-                    adaptor.append(buffer, withPresentationTime: timestamp)
+                    adaptor.append(processBuffer!, withPresentationTime: timestamp)
                 }
                 
             } else if assetWriter.status == .writing {
                 if let adaptor = self.assetWriterInputPixelBufferAdaptor, adaptor.assetWriterInput.isReadyForMoreMediaData {
-                    adaptor.append(buffer, withPresentationTime: timestamp)
+                    let processBuffer = ImageUtils.processPixelBuffer(buffer)
+                  
+                    adaptor.append(processBuffer!, withPresentationTime: timestamp)
                 }
             }
             

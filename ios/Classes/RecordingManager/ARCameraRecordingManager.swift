@@ -9,6 +9,23 @@ import CoreLocation
 import Flutter
 import SCNRecorder
 
+
+import UIKit
+
+struct DevicePixels {
+    static var size: CGSize {
+        let bounds = UIScreen.main.bounds      // logical points
+        let scale = UIScreen.main.scale        // pixel density
+        return CGSize(
+            width: bounds.width * scale,
+            height: bounds.height * scale
+        )
+    }
+
+    static var width: CGFloat { size.width }
+    static var height: CGFloat { size.height }
+}
+
 @available(iOS 14.0, *)
 class ARCameraRecordingManager: NSObject {
     
@@ -108,7 +125,15 @@ class ARCameraRecordingManager: NSObject {
         let imageResolution = videoFormat.imageResolution
         colorFrameResolution = [Int(imageResolution.height), Int(imageResolution.width)]
         
-        let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value: colorFrameResolution[0]), AVVideoWidthKey: NSNumber(value: colorFrameResolution[1])]
+        guard let sceneView=self.sceneView else { return }
+        let aspectRatio = DevicePixels.height / DevicePixels.width
+
+        let windowSize = ImageUtils.sizeForAspect(
+            baseWidth: Int(imageResolution.width),
+            baseHeight: Int(imageResolution.height),
+            aspectRatio: aspectRatio
+        )
+        let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value:windowSize.height), AVVideoWidthKey: NSNumber(value: windowSize.width)]
       
         trimmedRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "rgb recorder queue trimmed")
         fullRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "ful rgb recorder queue")
@@ -403,7 +428,7 @@ extension ARCameraRecordingManager {
                     // Move temp AR video to destination
                     try FileManager.default.moveItem(at: tempURL, to: destinationURL)
                     print("✅ AR Video saved: \(arVideoURL)")
-                    completion?(recordingId)
+//                    completion?(recordingId)
                 } catch {
                     print("❌ Failed to move AR video file: \(error)")
                 }
@@ -415,7 +440,7 @@ extension ARCameraRecordingManager {
             group.enter()
             self.fullRgbVideoRecorder?.finishRecording { [weak self] in
                 defer { group.leave() }
-                guard let self = self else { return }
+                guard self != nil else { return }
                 print("✅ RGB Video finished: \(rgbVideoURL)")
             }
             // After both videos are done, merge AR audio into RGB
@@ -459,6 +484,7 @@ extension ARCameraRecordingManager {
             // Write metadata
             self.writeMetadataToFile()
         }
+        else{completion?(recordingId)}
     }
 
     

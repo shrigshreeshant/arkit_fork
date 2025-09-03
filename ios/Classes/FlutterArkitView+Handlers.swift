@@ -654,4 +654,23 @@ extension FlutterArkitView {
             result(nil)
         }
     }
+    func toggleTorch(_ on: Bool) {
+        guard let device = AVCaptureDevice.default(for: .video),
+              device.hasTorch else {
+            print("Torch not available")
+            return
+        }
+
+        do {
+            try device.lockForConfiguration()
+            if on {
+                try device.setTorchModeOn(level: AVCaptureDevice.maxAvailableTorchLevel)
+            } else {
+                device.torchMode = .off
+            }
+            device.unlockForConfiguration()
+        } catch {
+            print("Torch could not be used: \(error)")
+        }
+    }
 }

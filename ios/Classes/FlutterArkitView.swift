@@ -146,7 +146,15 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "snapshotWithDepthData":
             onGetSnapshotWithDepthData(result)
         case "cameraPosition":
+            
             onGetCameraPosition(result)
+        case "toogleFlash":
+            guard let args = arguments,
+                  let toggle = args["toogleFlash"] as? Bool else {
+   
+                return
+            }
+            toggleTorch(toggle)
         case "onStartRecordingVideo":
             guard let args = arguments,
                   let isArEnabled = args["isArEnabled"] as? Bool else {
