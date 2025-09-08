@@ -673,4 +673,23 @@ extension FlutterArkitView {
             print("Torch could not be used: \(error)")
         }
     }
+    
+    
+    func toogleCamera() {
+        enableSelfie = !enableSelfie
+        if enableSelfie {
+            // Selfie mode → Face tracking (front camera)
+            if ARFaceTrackingConfiguration.isSupported {
+                let config = ARFaceTrackingConfiguration()
+                config.isLightEstimationEnabled = true
+                config.providesAudioData = true
+                sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors
+                                                       ])
+            } else {
+                print("Face tracking not supported on this device")
+            }
+        } else {
+            sceneView.session.run(configuration!)
+        }
+    }
 }

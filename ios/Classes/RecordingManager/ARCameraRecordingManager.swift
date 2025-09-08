@@ -429,6 +429,7 @@ extension ARCameraRecordingManager {
                     try FileManager.default.moveItem(at: tempURL, to: destinationURL)
                     print("✅ AR Video saved: \(arVideoURL)")
                     if(!isArEnabled) {
+                        self.writeMetadataToFile()
                         completion?(recordingId)
                     }
                 } catch {
@@ -452,6 +453,7 @@ extension ARCameraRecordingManager {
                 // Check both files exist
                 guard FileManager.default.fileExists(atPath: rgbVideoURL.path) else {
                     print("❌ RGB video file does not exist")
+                    self.writeMetadataToFile()
                     completion?(recordingId)
                     return
                 }
@@ -467,12 +469,13 @@ extension ARCameraRecordingManager {
                             case .failure(let error):
                                 print("❌ Audio update failed: \(error)")
                             }
-
+                            self.writeMetadataToFile()
                             // Call the final completion
                             completion?(recordingId)
                         }
                     }
                 } else {
+                    self.writeMetadataToFile()
                     // No AR video, just call completion
                     completion?(recordingId)
                 }
@@ -484,7 +487,7 @@ extension ARCameraRecordingManager {
             }
 
             // Write metadata
-            self.writeMetadataToFile()
+          
         }
        
     }
@@ -535,6 +538,7 @@ extension ARCameraRecordingManager {
             self.depthRecorder.finishRecording()
             self.confidenceMapRecorder.finishRecording()
             self.cameraInfoRecorder.finishRecording()
+            writeMetadataToFile()
         }
     }
     

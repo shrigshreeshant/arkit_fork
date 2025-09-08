@@ -5,6 +5,7 @@ import SCNRecorder
 
 
 class FlutterArkitView: NSObject, FlutterPlatformView {
+   
 
     
     let sceneView: ARSCNView
@@ -12,6 +13,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     var cameraStreamEventSink: FlutterEventSink?
     var displayLink: CADisplayLink?
     var recordingManager: ARCameraRecordingManager?=nil
+    var enableSelfie=false;
 
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
@@ -154,7 +156,12 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
    
                 return
             }
-            toggleTorch(toggle)
+      
+           
+            
+            
+        case "selfie":
+            toogleCamera()
         case "onStartRecordingVideo":
             guard let args = arguments,
                   let isArEnabled = args["isArEnabled"] as? Bool else {
