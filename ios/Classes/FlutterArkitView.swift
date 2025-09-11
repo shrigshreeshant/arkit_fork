@@ -153,7 +153,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         case "toggleFlash":
             guard let args = arguments,
                   let toggle = args["toggleFlash"] as? Bool else {
-   
+   toggleFlash(toggle)
                 return
             }
       
