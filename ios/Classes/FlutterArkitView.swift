@@ -18,6 +18,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
     let recordingQueue = DispatchQueue(label: "recordingThread", attributes: .concurrent)
+    var isArEnabled: Bool = false
 
 
 
@@ -163,12 +164,11 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             
         case "selfie":
             toogleCamera()
+        case "toggleAr":
+            isArEnabled = !isArEnabled
+            recordingManager?.setArEnableDuringRecording(isArEnabled)
         case "onStartRecordingVideo":
-            guard let args = arguments,
-                  let isArEnabled = args["isArEnabled"] as? Bool else {
-                print("❌ Invalid arguments for onStartRecordingVideo")
-                return
-            }
+        
 
        
                  recordingManager?.startRecording(isArEnabled: isArEnabled)
@@ -176,11 +176,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
       
         case"onStopRecordingVideo":
             
-            guard let args = arguments,
-                  let isArEnabled = args["isArEnabled"] as? Bool else {
-                print("❌ Invalid arguments for onStartRecordingVideo")
-                return
-            }
+  
             guard let recordingManager=self.recordingManager else {
                 return result("Recording manager not initialized")
             }

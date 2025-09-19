@@ -353,6 +353,10 @@ class ARKitController {
     return _channel.invokeMethod('toggleFlash', params);
   }
 
+  Future<void> toggleAr() {
+    return _channel.invokeMethod('toggleAr');
+  }
+
   Future<void> configureSelfie(bool enableSelfie) {
     final params = {"enableSelfie": enableSelfie};
     return _channel.invokeMethod('selfie', params);

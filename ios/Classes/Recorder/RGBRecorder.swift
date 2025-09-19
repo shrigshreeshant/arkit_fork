@@ -15,7 +15,6 @@ class RGBRecorder: NSObject, Recorder {
     // AVAssetWriter components for video recording.
     private var assetWriter: AVAssetWriter?
     private var assetWriterVideoInput: AVAssetWriterInput?
-    private var assetWriterAudioInput: AVAssetWriterInput?
     private var assetWriterInputPixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
     private var videoSettings: [String: Any]
     
@@ -35,8 +34,7 @@ class RGBRecorder: NSObject, Recorder {
         rgbRecorderQueue.async {
             self.count = 0
             
-            let label = self.rgbRecorderQueue.label
-            let suffix = label.contains("trimmed") ? "_trimmed" : "_regular"
+            let suffix = "_regular"
             
             let fileName = (recordingId + suffix as NSString).appendingPathExtension(fileExtension)!
             let outputFilePath = (dirPath as NSString).appendingPathComponent(fileName)
@@ -56,21 +54,8 @@ class RGBRecorder: NSObject, Recorder {
             
             assetWriter.add(assetWriterVideoInput)
             
-            
-            // Audio settings.
-//            let audioSettings: [String: Any] = [
-//                AVFormatIDKey: kAudioFormatMPEG4AAC,
-//                AVNumberOfChannelsKey: 2,
-//                AVSampleRateKey: 44100,
-//                AVEncoderBitRateKey: 64000
-//            ]
-//            let assetAudioWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
-//            assetAudioWriterInput.expectsMediaDataInRealTime = true
-//            assetWriter.add(assetAudioWriterInput)
-            
             self.assetWriter = assetWriter
             self.assetWriterVideoInput = assetWriterVideoInput
-//            self.assetWriterAudioInput = assetAudioWriterInput
             self.assetWriterInputPixelBufferAdaptor = assetWriterInputPixelBufferAdaptor
         }
     }
@@ -121,14 +106,7 @@ class RGBRecorder: NSObject, Recorder {
             self.count += 1
         }
     }
-    
-    func updateAudioSample(_ buffer: CMSampleBuffer){
-        guard let audioWriterInput = assetWriterAudioInput else { return }
-        if audioWriterInput.isReadyForMoreMediaData {
-            audioWriterInput.append(buffer)
-        }
-    }
-    
+
     func finishRecording(completion: (() -> Void)? = nil) {
         rgbRecorderQueue.async {
             guard let assetWriter = self.assetWriter else {

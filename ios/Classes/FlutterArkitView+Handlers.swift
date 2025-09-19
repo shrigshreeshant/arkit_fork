@@ -676,13 +676,21 @@ extension FlutterArkitView {
     
     
     func toogleCamera() {
+        
+        
         enableSelfie = !enableSelfie
         if enableSelfie {
+            
+            
             // Selfie mode → Face tracking (front camera)
             if ARFaceTrackingConfiguration.isSupported {
                 let config = ARFaceTrackingConfiguration()
                 config.isLightEstimationEnabled = true
                 config.providesAudioData = true
+                config.isWorldTrackingEnabled = false
+                config.maximumNumberOfTrackedFaces = 0
+                
+     
                 sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors
                                                        ])
             } else {
