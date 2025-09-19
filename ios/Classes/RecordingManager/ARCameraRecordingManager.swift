@@ -392,7 +392,10 @@ extension ARCameraRecordingManager {
                 return
             }
             
+            print("🔹 rEnabledudio: \(arEnableDuringRecording)")
+            
             if(arEnableDuringRecording){
+                arEnableDuringRecording=false
                 print("🔹 Starting RGB video update with AR audio")
                 let audioUtils = AudioUtils()
                 audioUtils.updateRGBVideoWithAudio(from: arVideoURL, rgbVideoURL: rgbVideoURL) { result in
@@ -400,8 +403,12 @@ extension ARCameraRecordingManager {
                         switch result {
                         case .success(let updatedURL):
                             print("✅ RGB video updated with AR audio: \(updatedURL)")
+                            completion?(recordingId)
+
                         case .failure(let error):
                             print("❌ Audio update failed: \(error)")
+                            completion?(nil)
+
                         }
                     }
                 }
@@ -409,8 +416,10 @@ extension ARCameraRecordingManager {
                 try FileManager.default.removeItem(at: rgbVideoURL)
                 try FileManager.default.moveItem(at: arVideoURL, to: rgbVideoURL)
                 print("✅ finalizeRecording: Deleted old RGB video at \(rgbVideoURL.lastPathComponent) and moved AR to \(rgbVideoURL.lastPathComponent)")
+                completion?(recordingId)
+
             }
-            completion?(recordingId)
+         
         } catch {
             print("❌ finalizeRecording: Error while deleting/renaming video: \(error.localizedDescription)")
             completion?(nil)
