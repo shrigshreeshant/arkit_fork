@@ -307,6 +307,8 @@ extension ARCameraRecordingManager {
             }
         
         self.isRecordingRGBVideo = true
+        startLidarRecording()
+
         setArEnableDuringRecording(isArEnabled)
         }
     
@@ -363,9 +365,10 @@ extension ARCameraRecordingManager {
             guard let self = self else { return }
             print("✅ RGB Video finished: \(rgbVideoURL)")
 
-            if self.isRecordingLidarData {
-                self.stopLidarRecording()
-            }
+   
+        }
+        if self.isRecordingLidarData {
+            self.stopLidarRecording()
         }
 
         group.notify(queue: .main) {
