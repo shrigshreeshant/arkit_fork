@@ -163,7 +163,11 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             
             
         case "selfie":
-            toogleCamera()
+            #if !DISABLE_TRUEDEPTH_API
+                toggleCamera()
+            #else
+                logPluginError("TRUEDEPTH_API disabled", toChannel: channel)
+            #endif
         case "toggleAr":
             isArEnabled = !isArEnabled
             recordingManager?.setArEnableDuringRecording(isArEnabled)
