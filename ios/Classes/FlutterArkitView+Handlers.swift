@@ -674,8 +674,8 @@ extension FlutterArkitView {
         }
     }
     
-    
-    func toogleCamera() {
+#if !DISABLE_TRUEDEPTH_API
+    func toggleCamera() {
         
         
         enableSelfie = !enableSelfie
@@ -700,4 +700,5 @@ extension FlutterArkitView {
             sceneView.session.run(configuration!)
         }
     }
+#endif
 }

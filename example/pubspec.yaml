@@ -1,6 +1,6 @@
 name: arkit_plugin_example
 description: Demonstrates how to use the arkit_plugin plugin.
-publish_to: 'none'
+publish_to: "none"
 
 environment:
   sdk: ">=2.12.0 <4.0.0"
@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
   vector_math: any
   collection: any
-  
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
