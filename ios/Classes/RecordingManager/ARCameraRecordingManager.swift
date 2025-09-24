@@ -30,6 +30,7 @@ struct DevicePixels {
 class ARCameraRecordingManager: NSObject {
     
     private let sessionQueue = DispatchQueue(label: "ar camera recording queue")
+    private let audioRecorderQueue = DispatchQueue(label: "audio recorder queue")
     private var thumbnailPath: String? = nil
     private var session : ARSession? = nil
     private var count: Int = 0
@@ -68,12 +69,18 @@ class ARCameraRecordingManager: NSObject {
         sessionQueue.async {
             self.configureSession()
         }
+        audioRecorderQueue.async {
+            self.setupAudioSession()
+        }
 
     }
     
     deinit {
         sessionQueue.sync {
             session?.pause()
+        }
+        audioRecorderQueue.sync {
+            deactivateAudioSession()
         }
 
         
@@ -99,6 +106,55 @@ class ARCameraRecordingManager: NSObject {
     }
     
     // Set up the outputs for video, depth data, and audio.
+    private(set) var audioCaptureSession: AVCaptureSession?
+    // Output for audio
+    private var audioDataOutput: AVCaptureAudioDataOutput?
+    
+    // Set up the capture session with audio inputs and outputs.
+    private func setupAudioSession() {
+        do {
+            audioCaptureSession = AVCaptureSession()
+            guard let audioCaptureSession = audioCaptureSession else {
+                throw ConfigurationError.sessionUnavailable
+            }
+            audioCaptureSession.automaticallyConfiguresApplicationAudioSession = false
+            audioCaptureSession.beginConfiguration()
+            try setupAudioCaptureInput()
+            try setupAudioCaptureOutput()
+            audioCaptureSession.commitConfiguration()
+        } catch {
+            print("Unable to configure the audio session.")
+        }
+    }
+    
+    // Set up the camera input (LiDAR) for depth data, video, and audio.
+    private func setupAudioCaptureInput() throws {
+        guard let audioCaptureSession = audioCaptureSession else {
+            throw ConfigurationError.sessionUnavailable
+        }
+        
+        // Set up audio input (microphone)
+        guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
+            throw ConfigurationError.micUnavailable
+        }
+        
+        let audioInput = try AVCaptureDeviceInput(device: audioDevice)
+        audioCaptureSession.addInput(audioInput)  // Add the audio input to the capture session.
+    }
+    
+    // Set up the outputs for video, depth data, and audio.
+    private func setupAudioCaptureOutput() throws{
+        guard let audioCaptureSession = audioCaptureSession else {
+            throw ConfigurationError.sessionUnavailable
+        }
+        
+        // Configure the audio data output.
+        audioDataOutput = AVCaptureAudioDataOutput()
+        guard let audioDataOutput = audioDataOutput else {return}
+        audioDataOutput.setSampleBufferDelegate(self, queue: audioRecorderQueue)
+        audioCaptureSession.addOutput(audioDataOutput)
+        
+    }
 
     private func find4by3VideoFormat() -> ARConfiguration.VideoFormat? {
         let availableFormats = ARWorldTrackingConfiguration.supportedVideoFormats
@@ -256,7 +312,11 @@ extension ARCameraRecordingManager {
     /// - Runs asynchronously on the session queue.
     func startRecording(isArEnabled:Bool) {
 
-
+        do {
+            try activateAudioSession()
+        } catch {
+            print("Couldn't activate audio session")
+        }
         
         guard let sceneView = self.sceneView else {
             print("Error capturing frame")
@@ -319,6 +379,7 @@ extension ARCameraRecordingManager {
     /// - Writes metadata file summarizing the recording.
     /// - Executes an optional completion handler with the recording ID.
     func stopRecording(completion: RecordingManagerCompletion?, isArEnabled: Bool) {
+        deactivateAudioSession()
         guard let sceneView = self.sceneView,
               let recordingId = self.recordingId,
               let dirUrl = self.dirUrl else {
@@ -341,6 +402,10 @@ extension ARCameraRecordingManager {
 //
         let group = DispatchGroup()
 //
+        guard let recorder = sceneView.recorder  else{
+            print("")
+            return
+        }
         group.enter()
         sceneView.finishVideoRecording { videoRecording in
             defer { group.leave() }
@@ -399,26 +464,27 @@ extension ARCameraRecordingManager {
             
             if(arEnableDuringRecording){
                 arEnableDuringRecording=false
-                print("🔹 Starting RGB video update with AR audio")
-                let audioUtils = AudioUtils()
-                audioUtils.updateRGBVideoWithAudio(from: arVideoURL, rgbVideoURL: rgbVideoURL) { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let updatedURL):
-                            print("✅ RGB video updated with AR audio: \(updatedURL)")
-                            completion?(recordingId)
-
-                        case .failure(let error):
-                            print("❌ Audio update failed: \(error)")
-                            completion?(nil)
-
-                        }
-                    }
-                }
+                completion?(recordingId)
+//                print("🔹 Starting RGB video update with AR audio")
+//                let audioUtils = AudioUtils()
+//                audioUtils.updateRGBVideoWithAudio(from: arVideoURL, rgbVideoURL: rgbVideoURL) { result in
+//                    DispatchQueue.main.async {
+//                        switch result {
+//                        case .success(let updatedURL):
+//                            print("✅ RGB video updated with AR audio: \(updatedURL)")
+//                            completion?(recordingId)
+//
+//                        case .failure(let error):
+//                            print("❌ Audio update failed: \(error)")
+//                            completion?(nil)
+//
+//                        }
+//                    }
+//                }
             } else{
-                try FileManager.default.removeItem(at: rgbVideoURL)
-                try FileManager.default.moveItem(at: arVideoURL, to: rgbVideoURL)
-                print("✅ finalizeRecording: Deleted old RGB video at \(rgbVideoURL.lastPathComponent) and moved AR to \(rgbVideoURL.lastPathComponent)")
+                try FileManager.default.removeItem(at: arVideoURL)
+//                try FileManager.default.moveItem(at: arVideoURL, to: rgbVideoURL)
+                print("✅ finalizeRecording: Deleted old Ar video at \(arVideoURL.lastPathComponent) and moved Rgb to \(rgbVideoURL.lastPathComponent)")
                 completion?(recordingId)
 
             }
@@ -497,5 +563,60 @@ extension ARCameraRecordingManager {
         
         let metadataPath = dirUrl.appendingPathComponent(recordingId).appendingPathExtension("json").path
         metadata.writeToFile(filepath: metadataPath)
+    }
+}
+
+
+
+@available(iOS 14.0, *)
+extension ARCameraRecordingManager: AVCaptureAudioDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        if !isRecordingRGBVideo {
+            return
+        }
+        if output == audioDataOutput {
+            fullRgbVideoRecorder?.updateAudioSample(sampleBuffer)
+        }
+    }
+    
+    func activateAudioSession() throws {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            
+            try audioSession.setCategory(AVAudioSession.Category.playAndRecord,
+                                         mode: .videoRecording,
+                                         options: [.mixWithOthers,
+                                                   .allowBluetoothA2DP,
+                                                   .defaultToSpeaker,
+                                                   .allowAirPlay])
+            
+            if #available(iOS 14.5, *) {
+                // prevents the audio session from being interrupted by a phone call
+                try audioSession.setPrefersNoInterruptionsFromSystemAlerts(true)
+            }
+            
+
+            // allow system sounds (notifications, calls, music) to play while recording
+            try audioSession.setAllowHapticsAndSystemSoundsDuringRecording(true)
+            audioRecorderQueue.async {
+                self.audioCaptureSession?.startRunning()
+            }
+        } catch let error as NSError {
+            switch error.code {
+            case 561_017_449:
+                throw ConfigurationError.micInUse
+            default:
+                throw ConfigurationError.audioSessionFailedToActivate
+            }
+        }
+    }
+    
+    func deactivateAudioSession() {
+        guard let audioCaptureSession = audioCaptureSession else {
+            return
+        }
+        if(audioCaptureSession.isRunning){
+            audioCaptureSession.stopRunning()
+        }
     }
 }
