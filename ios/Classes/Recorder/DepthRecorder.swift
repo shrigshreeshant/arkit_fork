@@ -24,7 +24,7 @@ class DepthRecorder: Recorder {
     deinit{
         print("DepthRecorder deinitialized")
     }
-    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "depth") {
+    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "depth",suffix: String = "") {
         
         depthRecorderQueue.async {
             

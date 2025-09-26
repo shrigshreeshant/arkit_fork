@@ -211,6 +211,10 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             
             case "stopLidarRecording":
             recordingManager?.stopLidarRecording()
+            
+            
+            case "recordGoodFrame":
+            recordingManager?.recordGoodFrame(arguments!)
 
         
 

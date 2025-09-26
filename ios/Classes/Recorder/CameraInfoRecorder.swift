@@ -50,7 +50,7 @@ class CameraInfoRecorder: Recorder {
     deinit{
         print("CameraInfoRecorder deinitialized")
     }
-    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "jsonl") {
+    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "jsonl",suffix: String = "") {
         
         cameraInfoRecorderQueue.async {
             

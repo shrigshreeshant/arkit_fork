@@ -338,6 +338,11 @@ class ARKitController {
     return _channel.invokeMethod('onStartRecordingVideo', params);
   }
 
+  Future<void> recordGoodFrame(int frameNumber) async {
+    final params = {"frameNumber": frameNumber};
+    return _channel.invokeMethod('recordGoodFrame', params);
+  }
+
   Future<String> stopRecordingVideo(bool isArEnabled) async {
     final params = {"isArEnabled": isArEnabled};
 

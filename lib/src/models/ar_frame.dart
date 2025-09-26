@@ -2,29 +2,29 @@ import 'dart:typed_data';
 
 class ARFrameData {
   final Uint8List frameBytes;
-  final int width;
-  final int height;
+  final int frameNumber;
+  final double timeStamp;
 
   ARFrameData({
     required this.frameBytes,
-    required this.width,
-    required this.height,
+    required this.frameNumber,
+    required this.timeStamp,
   });
 
   factory ARFrameData.fromMap(Map<dynamic, dynamic> map) {
-    final frameBytes = map['frameBytes'] as Uint8List;
-    final width = map['width'] as int;
-    final height = map['height'] as int;
+    final frameBytes = map['imageData'] as Uint8List;
+    final timeStamp = map['timestamp'] as double;
+    final frameNumber = map['frameNumber'] as int;
 
     return ARFrameData(
       frameBytes: frameBytes,
-      width: width,
-      height: height,
+      timeStamp: timeStamp,
+      frameNumber: frameNumber,
     );
   }
 
   @override
   String toString() {
-    return 'ARFrameData: image=${width}x$height, bytes=${frameBytes.length}';
+    return 'ARFrameData: framenumber=$frameNumber timestamp=$timeStamp, bytes=${frameBytes.length}';
   }
 }

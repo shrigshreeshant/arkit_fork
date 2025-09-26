@@ -63,7 +63,7 @@ class RGBStreamProcessor {
         self.isStreamingEnabled = false
     }
 
-    func update(_ buffer: CVPixelBuffer) {
+    func update(_ buffer: CVPixelBuffer,_ numOfRecordedFrames: Int,_ timestamp: CMTime) {
         guard isStreamingEnabled else { return }
 
         streamQueue.async {
@@ -72,14 +72,15 @@ class RGBStreamProcessor {
             self.lastFrameTime = now
             
             autoreleasepool {
-                guard let frameData = self.processFrame(buffer) else { return }
+                guard let frameData = self.processFrame(buffer,numOfRecordedFrames,timestamp) else { return }
+                
                 DispatchQueue.main.async {
                     self.eventSink?(frameData)
                 }
             }
         }
     }
-    private func processFrame(_ pixelBuffer: CVPixelBuffer) -> [String: Any]? {
+    private func processFrame(_ pixelBuffer: CVPixelBuffer,_ numOfRecordedFrames: Int,_ timestamp: CMTime) -> [String:Any]? {
         autoreleasepool {
             // Step 1: Create CIImage and apply scale + rotation
             let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
@@ -123,10 +124,13 @@ class RGBStreamProcessor {
 
             // Step 8: Return result
             return [
-                "frameBytes": FlutterStandardTypedData(bytes: jpegData),
-                "width": Int(cropWidth),
-                "height": Int(cropHeight)
+                "frameNumber": numOfRecordedFrames,
+                "timestamp": CMTimeGetSeconds(timestamp),
+                "imageData": FlutterStandardTypedData(bytes
+                                                    :jpegData) // send as base64 string
             ]
+            
+            
         }
     }
 

@@ -10,7 +10,7 @@ import CoreMedia
 protocol Recorder {
     associatedtype T
     
-    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String)
+    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String,suffix: String)
     func update(_: T, timestamp: CMTime?)
     
         func finishRecording(completion: (() -> Void)?)

@@ -25,7 +25,7 @@ class ConfidenceMapRecorder: Recorder {
     deinit{
         print("ConfidenceMapRecorder deinitialized")
     }
-    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "confidence") {
+    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "confidence",suffix: String = "") {
         
         confidenceMapRecorderQueue.async {
             

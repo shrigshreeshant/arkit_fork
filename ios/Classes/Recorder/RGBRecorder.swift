@@ -18,9 +18,12 @@ class RGBRecorder: NSObject, Recorder {
     private var assetWriterAudioInput: AVAssetWriterInput?
     private var assetWriterInputPixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
     private var videoSettings: [String: Any]
-    
+    private var isRegularvideo = true
     private var count: Int32 = 0
     private let rgbRecorderQueue: DispatchQueue
+    private var frameCount: Int64 = 0
+    private let fps: Double = 30
+  
     
     init(videoSettings: [String: Any], queueLabel: String) {
         self.videoSettings = videoSettings
@@ -31,11 +34,15 @@ class RGBRecorder: NSObject, Recorder {
         print("RGBRecorder deinitialized")
     }
     
-    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "mp4") {
+    func prepareForRecording(dirPath: String, recordingId: String, fileExtension: String = "mp4",suffix: String = "_regular") {
         rgbRecorderQueue.async {
-            self.count = 0
             
-            let suffix = "_regular"
+            self.count = 0
+            if(suffix == "_goodWindow"){
+                self.isRegularvideo = false
+                
+            }
+         
             
             let fileName = (recordingId + suffix as NSString).appendingPathExtension(fileExtension)!
             let outputFilePath = (dirPath as NSString).appendingPathComponent(fileName)
@@ -94,7 +101,7 @@ class RGBRecorder: NSObject, Recorder {
             if assetWriter.status == .unknown {
                 
                 assetWriter.startWriting()
-                assetWriter.startSession(atSourceTime: timestamp)
+                assetWriter.startSession(atSourceTime:  self.isRegularvideo ? timestamp : .zero)
                 
                 if let adaptor = self.assetWriterInputPixelBufferAdaptor {
                     
@@ -106,14 +113,33 @@ class RGBRecorder: NSObject, Recorder {
                     }
                     let processBuffer = ImageUtils.processPixelBuffer(buffer)
                     
-                    adaptor.append(processBuffer!, withPresentationTime: timestamp)
+                    var presentationTime: CMTime
+                    if self.isRegularvideo {
+                        presentationTime = timestamp
+                     
+                          } else {
+                              presentationTime = CMTime(value: self.frameCount, timescale: CMTimeScale(self.fps))
+                              self.frameCount += 1
+                             
+                          }
+                    
+                    adaptor.append(self.isRegularvideo ? processBuffer! : buffer, withPresentationTime: presentationTime)
                 }
                 
             } else if assetWriter.status == .writing {
                 if let adaptor = self.assetWriterInputPixelBufferAdaptor, adaptor.assetWriterInput.isReadyForMoreMediaData {
                     let processBuffer = ImageUtils.processPixelBuffer(buffer)
-                  
-                    adaptor.append(processBuffer!, withPresentationTime: timestamp)
+                    var presentationTime: CMTime
+                    if self.isRegularvideo {
+                        presentationTime = timestamp
+                     
+                          } else {
+                              presentationTime = CMTime(value: self.frameCount, timescale: CMTimeScale(self.fps))
+                              self.frameCount += 1
+                             
+                          }
+                    
+                    adaptor.append(self.isRegularvideo ? processBuffer! : buffer, withPresentationTime: presentationTime)
                 }
             }
             
@@ -128,6 +154,8 @@ class RGBRecorder: NSObject, Recorder {
     }
 
     func finishRecording(completion: (() -> Void)? = nil) {
+        
+        self.frameCount=0
         rgbRecorderQueue.async {
             guard let assetWriter = self.assetWriter else {
                 print("Error: assetWriter is nil!")
