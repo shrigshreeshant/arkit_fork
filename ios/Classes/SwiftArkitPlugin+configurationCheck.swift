@@ -34,3 +34,17 @@ func checkConfiguration(_ arguments: Any?) -> Bool {
         return false
     }
 }
+
+
+ func isLidarSupported() -> Bool  {
+    if #available(iOS 16.0, *) {
+        if let device = AVCaptureDevice.default(.builtInLiDARDepthCamera, for: .video, position: .back) {
+         return device.isConnected
+        } else {
+         return false
+        }
+    }
+     else{
+         return false
+     }
+}

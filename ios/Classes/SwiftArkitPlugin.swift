@@ -16,8 +16,6 @@ public class SwiftArkitPlugin: NSObject, FlutterPlugin {
         SwiftArkitPlugin.registrar = registrar
         let arkitFactory = FlutterArkitFactory(messenger: registrar.messenger())
 
-
-
         registrar.register(arkitFactory, withId: "arkit")
 
         print("ARKit Plugin: Setting up configuration channel")
@@ -30,16 +28,20 @@ public class SwiftArkitPlugin: NSObject, FlutterPlugin {
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         print("ARKit Plugin: Handling method call: \(call.method)")
-        if call.method == "checkConfiguration" {
-            print("ARKit Plugin: Checking configuration")
+
+        switch call.method {
+        case "checkConfiguration":
             let res = checkConfiguration(call.arguments)
-            print("ARKit Plugin: Configuration check result: \(res)")
             result(res)
-        } else {
-            print("ARKit Plugin: Method not implemented: \(call.method)")
+
+        case "checkLidarAvailability":
+            result(isLidarSupported())
+
+        default:
             result(FlutterMethodNotImplemented)
         }
     }
+
 }
 
 class FlutterArkitFactory: NSObject, FlutterPlatformViewFactory {
@@ -96,6 +98,5 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
         eventSink = nil
         return nil
     }
-
 
 }

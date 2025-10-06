@@ -21,4 +21,10 @@ class ARKitPlugin {
       return event as Uint8List;
     });
   }
+
+  static Future<bool> checkLidarAvailability() {
+    return _channel
+        .invokeMethod<bool>('checkLidarAvailability')
+        .then((value) => value!);
+  }
 }
