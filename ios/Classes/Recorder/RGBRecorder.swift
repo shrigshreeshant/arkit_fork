@@ -162,7 +162,10 @@ class RGBRecorder: NSObject, Recorder {
                 DispatchQueue.main.async { completion?() }
                 return
             }
-
+            if( assetWriter.status == .unknown){
+                DispatchQueue.main.async { completion?() }
+                return
+            }
             assetWriter.finishWriting { [weak self] in
                 guard let self = self else {
                     DispatchQueue.main.async { completion?() }
