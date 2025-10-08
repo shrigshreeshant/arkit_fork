@@ -187,7 +187,7 @@ class ARCameraRecordingManager: NSObject {
     
     
     
-    private func configureSession() {
+       private func configureSession() {
         
         let configuration = ARWorldTrackingConfiguration()
         
@@ -210,15 +210,12 @@ class ARCameraRecordingManager: NSObject {
         print("✅ Recommended Color frame 4K format: \(Int(colorFrameResolution[0]))x\(Int(colorFrameResolution[1])) ")
         
         guard self.sceneView != nil else { return }
-        let aspectRatio = DevicePixels.height / DevicePixels.width
+      
 
-        let windowSize = ImageUtils.sizeForAspect(
-            baseWidth: Int(imageResolution.width),
-            baseHeight: Int(imageResolution.height),
-            aspectRatio: aspectRatio
-        )
+
         
-        let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value:windowSize.height), AVVideoWidthKey: NSNumber(value: windowSize.width)]
+        let videoSettings: [String: Any] =  [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value:colorFrameResolution[0]), AVVideoWidthKey: NSNumber(value: colorFrameResolution[1])]
+        
         let goodWindoVideoSetting: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value:colorFrameResolution[0]), AVVideoWidthKey: NSNumber(value: colorFrameResolution[1])]
       
         fullRgbVideoRecorder = RGBRecorder(videoSettings: videoSettings, queueLabel: "ful rgb recorder queue")
