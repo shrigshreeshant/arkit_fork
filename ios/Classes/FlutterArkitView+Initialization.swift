@@ -66,6 +66,14 @@ extension FlutterArkitView {
         configuration = parseConfiguration(arguments)
         configuration?.providesAudioData=true
         configuration?.frameSemantics = [.sceneDepth]
+        if #available(iOS 16.0, *){
+            let videoFormat = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
+            if(videoFormat != nil){
+                configuration?.videoFormat = videoFormat!
+                configuration?.videoHDRAllowed=true
+            }
+        }
+  
         
         if configuration != nil {
             print("FlutterArkitView: Running ARSession with configuration")

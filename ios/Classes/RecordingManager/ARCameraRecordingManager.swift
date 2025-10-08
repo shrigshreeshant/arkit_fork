@@ -165,6 +165,14 @@ class ARCameraRecordingManager: NSObject {
 
     private func find4by3VideoFormat() -> ARConfiguration.VideoFormat? {
         let availableFormats = ARWorldTrackingConfiguration.supportedVideoFormats
+        if #available(iOS 16.0, *) {
+            let format = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
+            let resolution = format?.imageResolution
+            let fps = format?.framesPerSecond
+            guard let resolution = resolution else{ return nil}
+            print("✅ Recommended 4K format: \(Int(resolution.width))x\(Int(resolution.height)) @ \(fps) FPS")
+            return format
+        }
         for format in availableFormats {
             let resolution = format.imageResolution
             if resolution.width / 4 == resolution.height / 3 {
@@ -174,6 +182,9 @@ class ARCameraRecordingManager: NSObject {
         }
         return nil
     }
+    
+    
+    
     
     
     private func configureSession() {
@@ -196,6 +207,8 @@ class ARCameraRecordingManager: NSObject {
         let imageResolution = videoFormat.imageResolution
         colorFrameResolution = [Int(imageResolution.height), Int(imageResolution.width)]
         
+        print("✅ Recommended Color frame 4K format: \(Int(colorFrameResolution[0]))x\(Int(colorFrameResolution[1])) ")
+        
         guard self.sceneView != nil else { return }
         let aspectRatio = DevicePixels.height / DevicePixels.width
 
@@ -204,6 +217,7 @@ class ARCameraRecordingManager: NSObject {
             baseHeight: Int(imageResolution.height),
             aspectRatio: aspectRatio
         )
+        
         let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value:windowSize.height), AVVideoWidthKey: NSNumber(value: windowSize.width)]
         let goodWindoVideoSetting: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value:colorFrameResolution[0]), AVVideoWidthKey: NSNumber(value: colorFrameResolution[1])]
       
@@ -223,7 +237,11 @@ extension ARCameraRecordingManager: ARSessionDelegate {
             
             do {
                 let buffer = try frame.capturedImage.copy()
-//                r
+
+                let width = CVPixelBufferGetWidth(buffer)
+                let height = CVPixelBufferGetHeight(buffer)
+
+                print("PixelBuffer dimensions: \(width)x\(height)")
 //
 //                
 //                // Update live RGB preview stream (e.g., for UI)
@@ -245,7 +263,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 
                 print("**** @Controller: full rgb \(self.numRgbFrames) ****")
                 self.fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
-                self.numRgbFrames += 1
+         
       
                 // Depth + Confidence + Camera Info recording
                 guard self.isRecordingLidarData else { return }
@@ -285,7 +303,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 frameBufferPool.store(frameNumber: numRgbFrames, pixelBuffer: buffer, timestamp: currentTimeStamp,depthBuffer: depthMap,confidenceBuffer: confidenceMap,cameraInfo:cameraInfo)
                 self.cameraInfoRecorder.update(cameraInfo)
                 
-                self.numLidarFrames += 1
+     
                 
             } catch {
                 print("❌ Failed to process frame: \(error)")
@@ -457,7 +475,6 @@ extension ARCameraRecordingManager {
 
             print("✅ goodWindow Video finished")
 
-   
         }
         if self.isRecordingLidarData {
             self.stopLidarRecording()
@@ -563,6 +580,8 @@ extension ARCameraRecordingManager {
             self.depthRecorder.update(frame.depthBuffer, timestamp: frame.timestamp)
             self.confidenceMapRecorder.update(frame.confidenceBuffer, timestamp: frame.timestamp)
             self.cameraInfoRecorder.update(frame.cameraInfo, timestamp: frame.timestamp)
+            self.numRgbFrames+=1
+            self.numLidarFrames+=1
             
         } else {  
             print("⚠️ frameNumber is missing or not an Int")

@@ -24,7 +24,7 @@ class RGBStreamProcessor {
     private var isStreamingEnabled = false
     
     private var lastFrameTime = CACurrentMediaTime()
-    private let targetFPS: Double = 10.0
+    private let targetFPS: Double = 20.0
     private var frameInterval: CFTimeInterval { 1.0 / targetFPS }
     
     private lazy var ciContext: CIContext = {
@@ -82,36 +82,37 @@ class RGBStreamProcessor {
     }
     private func processFrame(_ pixelBuffer: CVPixelBuffer,_ numOfRecordedFrames: Int,_ timestamp: CMTime) -> [String:Any]? {
         autoreleasepool {
+     
             // Step 1: Create CIImage and apply scale + rotation
             let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
             let transform = CGAffineTransform(scaleX: 0.3, y: 0.3).rotated(by: -.pi / 2)
             let transformedImage = ciImage.transformed(by: transform)
-
-            // Step 2: Get original extent
-            let extent = transformedImage.extent
-            let originalWidth = extent.width
-            let originalHeight = extent.height
-            let desiredAspectRatio: CGFloat = 0.9225
-
-            // Step 3: Compute crop size maintaining aspect ratio
-            var cropWidth = originalWidth
-            var cropHeight = cropWidth / desiredAspectRatio
-
-            if cropHeight > originalHeight {
-                cropHeight = originalHeight
-                cropWidth = cropHeight * desiredAspectRatio
-            }
-
-            // Step 4: Center crop rectangle
-            let cropX = extent.midX - cropWidth / 2
-            let cropY = extent.midY - cropHeight / 2
-            let cropRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
-
-            // Step 5: Crop image
-            let croppedImage = transformedImage.cropped(to: cropRect)
+//
+//            // Step 2: Get original extent
+//            let extent = transformedImage.extent
+//            let originalWidth = extent.width
+//            let originalHeight = extent.height
+//            let desiredAspectRatio: CGFloat = 0.9225
+//
+//            // Step 3: Compute crop size maintaining aspect ratio
+//            var cropWidth = originalWidth
+//            var cropHeight = cropWidth / desiredAspectRatio
+//
+//            if cropHeight > originalHeight {
+//                cropHeight = originalHeight
+//                cropWidth = cropHeight * desiredAspectRatio
+//            }
+//
+//            // Step 4: Center crop rectangle
+//            let cropX = extent.midX - cropWidth / 2
+//            let cropY = extent.midY - cropHeight / 2
+//            let cropRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
+//
+//            // Step 5: Crop image
+//            let croppedImage = transformedImage.cropped(to: cropRect)
 
             // Step 6: Convert to CGImage
-            guard let cgImage = ciContext.createCGImage(croppedImage, from: croppedImage.extent) else {
+            guard let cgImage = ciContext.createCGImage(transformedImage, from: transformedImage.extent) else {
                 print("RGBStreamProcessor: Failed to create CGImage")
                 return nil
             }

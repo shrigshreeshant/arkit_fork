@@ -20,7 +20,9 @@ class ImageUtils {
 
     /// Process and crop a CVPixelBuffer (scale, crop).
     static func processPixelBuffer(_ buffer: CVPixelBuffer, desiredAspect: CGFloat = 2556/1179) -> CVPixelBuffer? {
+//        return buffer
         autoreleasepool {
+            return buffer
             let ciImage = CIImage(cvPixelBuffer: buffer)
 
             // Original dimensions
