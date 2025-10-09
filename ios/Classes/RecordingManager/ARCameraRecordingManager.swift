@@ -243,7 +243,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
 //
 //                
 //                // Update live RGB preview stream (e.g., for UI)
-         
+                       self.rgbStreamer.update(buffer,self.totalNoOfRgbFrame,self.currentTimeStamp)
                 
                 // Skip video processing if not recording
                 guard self.isRecordingRGBVideo else { return }
@@ -300,7 +300,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 
                 frameBufferPool.store(frameNumber: self.totalNoOfRgbFrame, pixelBuffer: buffer, timestamp: currentTimeStamp,depthBuffer: depthMap,confidenceBuffer: confidenceMap,cameraInfo:cameraInfo)
                 self.cameraInfoRecorder.update(cameraInfo)
-                self.rgbStreamer.update(buffer,self.totalNoOfRgbFrame,self.currentTimeStamp)
+  
                 self.totalNoOfRgbFrame += 1
      
                 
