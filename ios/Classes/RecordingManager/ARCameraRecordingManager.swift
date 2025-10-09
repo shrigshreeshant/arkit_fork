@@ -48,8 +48,9 @@ class ARCameraRecordingManager: NSObject {
     
     
     //frame buffer pool
-    private let frameBufferPool = FrameBufferPool(capacity:300)
+    private let frameBufferPool = FrameBufferPool(capacity:60)
     private var numRgbFrames: Int = 0
+    private var totalNoOfRgbFrame: Int = 0
     private var numLidarFrames: Int = 0
     
     private var rgbVideoStartTimeStamp: CMTime = .zero
@@ -242,7 +243,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
 //
 //                
 //                // Update live RGB preview stream (e.g., for UI)
-                self.rgbStreamer.update(buffer,self.numRgbFrames,self.currentTimeStamp)
+         
                 
                 // Skip video processing if not recording
                 guard self.isRecordingRGBVideo else { return }
@@ -297,9 +298,10 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 )
                 
                 
-                frameBufferPool.store(frameNumber: numRgbFrames, pixelBuffer: buffer, timestamp: currentTimeStamp,depthBuffer: depthMap,confidenceBuffer: confidenceMap,cameraInfo:cameraInfo)
+                frameBufferPool.store(frameNumber: self.totalNoOfRgbFrame, pixelBuffer: buffer, timestamp: currentTimeStamp,depthBuffer: depthMap,confidenceBuffer: confidenceMap,cameraInfo:cameraInfo)
                 self.cameraInfoRecorder.update(cameraInfo)
-                
+                self.rgbStreamer.update(buffer,self.totalNoOfRgbFrame,self.currentTimeStamp)
+                self.totalNoOfRgbFrame += 1
      
                 
             } catch {
@@ -362,6 +364,8 @@ extension ARCameraRecordingManager {
                 guard let self = self else { return }
                 self.numRgbFrames = 0
                 self.numLidarFrames = 0
+                     self.numLidarFrames=0
+     
                 
                 self.rgbVideoStartTimeStamp = .zero
                 if let currentFrame = session?.currentFrame {
@@ -409,6 +413,7 @@ extension ARCameraRecordingManager {
     /// - Writes metadata file summarizing the recording.
     /// - Executes an optional completion handler with the recording ID.
     func stopRecording(completion: RecordingManagerCompletion?, isArEnabled: Bool) {
+
         deactivateAudioSession()
         guard let sceneView = self.sceneView,
               let recordingId = self.recordingId,
