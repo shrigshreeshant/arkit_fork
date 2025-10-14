@@ -166,17 +166,19 @@ class ARCameraRecordingManager: NSObject {
 
     private func find4by3VideoFormat() -> ARConfiguration.VideoFormat? {
         let availableFormats = ARWorldTrackingConfiguration.supportedVideoFormats
-        if #available(iOS 16.0, *) {
-            let format = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
-            let resolution = format?.imageResolution
-            let fps = format?.framesPerSecond
-            guard let resolution = resolution else{ return nil}
-            print("✅ Recommended 4K format: \(Int(resolution.width))x\(Int(resolution.height)) @ \(fps) FPS")
-            return format
-        }
+//        if #available(iOS 16.0, *) {
+//            if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth)  {
+//                let format = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
+//                let resolution = format?.imageResolution
+//                let fps = format?.framesPerSecond
+//                guard let resolution = resolution else{ return nil}
+//                print("✅ Recommended 4K format: \(Int(resolution.width))x\(Int(resolution.height)) @ \(fps) FPS")
+//                return format
+//            }
+//        }
         for format in availableFormats {
             let resolution = format.imageResolution
-            if resolution.width / 4 == resolution.height / 3 {
+            if resolution.width / 16 == resolution.height / 9 {
                 print("Using video format: \(format)")
                 return format
             }
@@ -243,7 +245,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
 //
 //                
 //                // Update live RGB preview stream (e.g., for UI)
-                       self.rgbStreamer.update(buffer,self.totalNoOfRgbFrame,self.currentTimeStamp)
+                self.rgbStreamer.update(buffer,self.totalNoOfRgbFrame,self.currentTimeStamp)
                 
                 // Skip video processing if not recording
                 guard self.isRecordingRGBVideo else { return }
@@ -261,6 +263,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 
                 print("**** @Controller: full rgb \(self.numRgbFrames) ****")
                 self.fullRgbVideoRecorder?.update(buffer, timestamp: timeStamp)
+                self.totalNoOfRgbFrame += 1
          
       
                 // Depth + Confidence + Camera Info recording
@@ -268,6 +271,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 
                 guard let depthData = frame.sceneDepth else {
                     print("❌ Failed to acquire depth data.")
+                    frameBufferPool.store(frameNumber: self.totalNoOfRgbFrame, pixelBuffer: buffer, timestamp: currentTimeStamp,depthBuffer: nil,confidenceBuffer: nil,cameraInfo:nil)
                     return
                 }
                 
@@ -301,7 +305,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
                 frameBufferPool.store(frameNumber: self.totalNoOfRgbFrame, pixelBuffer: buffer, timestamp: currentTimeStamp,depthBuffer: depthMap,confidenceBuffer: confidenceMap,cameraInfo:cameraInfo)
                 self.cameraInfoRecorder.update(cameraInfo)
   
-                self.totalNoOfRgbFrame += 1
+             
      
                 
             } catch {
@@ -394,7 +398,7 @@ extension ARCameraRecordingManager {
                      }
                      
                 self.fullRgbVideoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId)
-                     self.goodWindowRgbVIdeoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId,suffix: "_goodWindow")
+                     self.goodWindowRgbVIdeoRecorder?.prepareForRecording(dirPath: dirUrl.path, recordingId: recordingId,suffix: "_trimmed")
       
 
 
@@ -579,10 +583,18 @@ extension ARCameraRecordingManager {
             }
             frameBufferPool.remove(frameNumber: frameNumber)
             self.goodWindowRgbVIdeoRecorder?.update(frame.pixelBuffer, timestamp: frame.timestamp)
-            self.depthRecorder.update(frame.depthBuffer, timestamp: frame.timestamp)
-            self.confidenceMapRecorder.update(frame.confidenceBuffer, timestamp: frame.timestamp)
-            self.cameraInfoRecorder.update(frame.cameraInfo, timestamp: frame.timestamp)
             self.numRgbFrames+=1
+            
+            guard let depthbuffer=frame.depthBuffer
+            else{return}
+            self.depthRecorder.update(depthbuffer, timestamp: frame.timestamp)
+            guard let confidenceBuffer=frame.confidenceBuffer
+            else{return}
+            self.confidenceMapRecorder.update(confidenceBuffer, timestamp: frame.timestamp)
+            guard let cameraInfo=frame.cameraInfo
+            else{return}
+            self.cameraInfoRecorder.update(cameraInfo, timestamp: frame.timestamp)
+     
             self.numLidarFrames+=1
             
         } else {  
@@ -591,6 +603,51 @@ extension ARCameraRecordingManager {
         
 
         
+    }
+    
+    
+    func recordGoodFrames(_ frameParams: [String: Any]) {
+        guard let frameNumber = frameParams["frameNumber"] as? Int else {
+            print("⚠️ frameNumber is missing or not an Int")
+            return
+        }
+
+        // Retrieve multiple frames around this frame number
+        let frameList = frameBufferPool.retrieveFrameList(frameNumber: frameNumber)  // returns [Frame]
+
+        guard !frameList.isEmpty else {
+            print("⚠️ No new frames retrieved for frameNumber \(frameNumber)")
+            return
+        }
+
+        // Process each frame
+        for frame in frameList {
+            // Remove from pool if needed
+            frameBufferPool.remove(frameNumber: frame.number)
+
+            // Update RGB video recorder
+            self.goodWindowRgbVIdeoRecorder?.update(frame.pixelBuffer, timestamp: frame.timestamp)
+            self.numRgbFrames += 1
+
+            // Update depth buffer if available
+            if let depthBuffer = frame.depthBuffer {
+                self.depthRecorder.update(depthBuffer, timestamp: frame.timestamp)
+            }
+
+            // Update confidence buffer if available
+            if let confidenceBuffer = frame.confidenceBuffer {
+                self.confidenceMapRecorder.update(confidenceBuffer, timestamp: frame.timestamp)
+            }
+
+            // Update camera info if available
+            if let cameraInfo = frame.cameraInfo {
+                self.cameraInfoRecorder.update(cameraInfo, timestamp: frame.timestamp)
+            }
+
+            self.numLidarFrames += 1
+        }
+
+        print("✅ Recorded \(frameList.count) frames starting from frameNumber \(frameNumber)")
     }
     
     /// Stops LiDAR depth data recording.

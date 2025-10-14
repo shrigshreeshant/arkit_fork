@@ -65,14 +65,15 @@ extension FlutterArkitView {
         sceneView.debugOptions = parseDebugOptions(arguments)
         configuration = parseConfiguration(arguments)
         configuration?.providesAudioData=true
-        configuration?.frameSemantics = [.sceneDepth]
-        if #available(iOS 16.0, *){
-            let videoFormat = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
-            if(videoFormat != nil){
-                configuration?.videoFormat = videoFormat!
-                configuration?.videoHDRAllowed=true
-            }
+        
+        let format = find4by3VideoFormat()
+        guard let videoforamt = format else {
+            return
         }
+        configuration?.videoFormat = videoforamt
+       
+     
+      
   
         
         if configuration != nil {
@@ -81,6 +82,39 @@ extension FlutterArkitView {
         }
        
     }
+    
+     func find4by3VideoFormat() -> ARConfiguration.VideoFormat? {
+        let availableFormats = ARWorldTrackingConfiguration.supportedVideoFormats
+         for (index, format) in availableFormats.enumerated() {
+             let res = format.imageResolution
+             let fps = format.framesPerSecond
+             print("""
+             [\(index)]
+             - Resolution: \(Int(res.width))x\(Int(res.height))
+             - FPS: \(fps)
+             """)
+         }
+//        if #available(iOS 16.0, *) {
+//            if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+//                configuration?.frameSemantics = [.sceneDepth]
+//                let format = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
+//                let resolution = format?.imageResolution
+//                let fps = format?.framesPerSecond
+//                guard let resolution = resolution else{ return nil}
+//                print("✅ Recommended 4K format: \(Int(resolution.width))x\(Int(resolution.height)) @ \(fps) FPS")
+//                return format
+//            }
+//        }
+        for format in availableFormats {
+            let resolution = format.imageResolution
+            if resolution.width / 16 == resolution.height / 9 {
+                print("Using video format: \(format)")
+                return format
+            }
+        }
+        return nil
+    }
+    
 
     func parseDebugOptions(_ arguments: [String: Any]) -> SCNDebugOptions {
         var options = ARSCNDebugOptions().rawValue

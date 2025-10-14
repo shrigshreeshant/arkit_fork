@@ -38,7 +38,7 @@ class RGBRecorder: NSObject, Recorder {
         rgbRecorderQueue.async {
             
             self.count = 0
-            if(suffix == "_goodWindow"){
+            if(suffix == "_trimmed"){
                 self.isRegularvideo = false
                 
             }
@@ -139,7 +139,7 @@ class RGBRecorder: NSObject, Recorder {
                              
                           }
                     
-                    adaptor.append(self.isRegularvideo ? processBuffer! : buffer, withPresentationTime: presentationTime)
+                    adaptor.append(buffer, withPresentationTime: presentationTime)
                 }
             }
             

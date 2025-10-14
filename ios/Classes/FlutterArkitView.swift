@@ -10,10 +10,12 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     
     let sceneView: ARSCNView
     let channel: FlutterMethodChannel
-    var cameraStreamEventSink: FlutterEventSink?
+
     var displayLink: CADisplayLink?
     var recordingManager: ARCameraRecordingManager?=nil
     var enableSelfie=false;
+    var cameraStreamHandler:CameraStreamHandler?
+    var cameraStreamChannel:FlutterEventChannel?
 
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
@@ -30,10 +32,10 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         self.recordingManager = ARCameraRecordingManager(sceneview: sceneView);
         
         
-        let cameraStreamChannel = FlutterEventChannel(
+        cameraStreamChannel = FlutterEventChannel(
             name: "arkit/cameraStream", binaryMessenger: msg)
-        let cameraStreamHandler = CameraStreamHandler(arRecordingManager:recordingManager!)
-        cameraStreamChannel.setStreamHandler(cameraStreamHandler)
+        cameraStreamHandler = CameraStreamHandler(arRecordingManager:recordingManager!)
+        cameraStreamChannel?.setStreamHandler(cameraStreamHandler)
    
        
         channel = FlutterMethodChannel(name: "arkit_\(viewId)", binaryMessenger: msg)
@@ -214,7 +216,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             
             
             case "recordGoodFrame":
-            recordingManager?.recordGoodFrame(arguments!)
+            recordingManager?.recordGoodFrames(arguments!)
 
         
 
@@ -241,15 +243,19 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
          clearScene() // Remove all child nodes and resources
          sceneView.delegate = nil
          sceneView.removeFromSuperview()
-         sceneView.scene = SCNScene()
-         
+
+        cameraStreamChannel?.setStreamHandler(nil)
          channel.setMethodCallHandler(nil)
+        
 
          result(nil)
      
     }
     
     func clearScene() {
+     
+        
+        
         sceneView.scene.rootNode.enumerateChildNodes { node, _ in
             node.geometry?.materials.forEach { material in
                 material.diffuse.contents = nil
