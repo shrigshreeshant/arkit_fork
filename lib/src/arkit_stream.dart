@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:arkit_plugin/src/models/ar_frame.dart';
 import 'package:flutter/services.dart';
 
