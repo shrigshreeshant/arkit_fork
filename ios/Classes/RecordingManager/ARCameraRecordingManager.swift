@@ -34,14 +34,13 @@ class ARCameraRecordingManager: NSObject {
     private var thumbnailPath: String? = nil
     private var session : ARSession? = nil
     private var count: Int = 0
-    private var sceneView: ARSCNView? = nil
+    private weak var sceneView: ARSCNView?
 
     
     private let depthRecorder = DepthRecorder()
     // both fullRgbVideoRecorders will be initialized in configureSession
     private var fullRgbVideoRecorder: RGBRecorder? = nil
     private var goodWindowRgbVIdeoRecorder: RGBRecorder? = nil
-    private let thumbnailGenerator = ThumbnailGenerator()
     private let cameraInfoRecorder = CameraInfoRecorder()
     private let confidenceMapRecorder = ConfidenceMapRecorder()
     let rgbStreamer: RGBStreamProcessor = RGBStreamProcessor()
@@ -71,15 +70,15 @@ class ARCameraRecordingManager: NSObject {
     
     init(sceneview: ARSCNView) {
         super.init()
-        self.session = sceneview.session;
-        self.sceneView = sceneview;
-
+        self.session = sceneview.session
+        self.sceneView = sceneview
         sessionQueue.async {
             self.configureSession()
         }
         audioRecorderQueue.async {
             self.setupAudioSession()
         }
+        print("ARCameraRecordingManager initialized")
 
     }
     
@@ -90,8 +89,8 @@ class ARCameraRecordingManager: NSObject {
         audioRecorderQueue.sync {
             deactivateAudioSession()
         }
-
-        
+        session = nil
+        sceneView = nil
         print("ARCameraRecordingManager deinitialized")
         
     }
@@ -211,10 +210,6 @@ class ARCameraRecordingManager: NSObject {
         colorFrameResolution = [Int(imageResolution.height), Int(imageResolution.width)]
         
         print("✅ Recommended Color frame 4K format: \(Int(colorFrameResolution[0]))x\(Int(colorFrameResolution[1])) ")
-        
-        guard self.sceneView != nil else { return }
-      
-
 
         
         let videoSettings: [String: Any] =  [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoHeightKey: NSNumber(value:colorFrameResolution[0]), AVVideoWidthKey: NSNumber(value: colorFrameResolution[1])]
@@ -238,12 +233,7 @@ extension ARCameraRecordingManager: ARSessionDelegate {
             do {
                 let buffer = try frame.capturedImage.copy()
 
-                let width = CVPixelBufferGetWidth(buffer)
-                let height = CVPixelBufferGetHeight(buffer)
-
-                print("PixelBuffer dimensions: \(width)x\(height)")
-//
-//                
+               
 //                // Update live RGB preview stream (e.g., for UI)
                 self.rgbStreamer.update(buffer,self.totalNoOfRgbFrame,self.currentTimeStamp)
                 

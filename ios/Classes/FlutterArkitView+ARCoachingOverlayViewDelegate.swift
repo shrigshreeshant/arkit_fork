@@ -4,6 +4,9 @@ import Foundation
 @available(iOS 13.0, *)
 extension FlutterArkitView: ARCoachingOverlayViewDelegate {
     func addCoachingOverlay(_ arguments: [String: Any]) {
+        guard let sceneView = viewController?.sceneView else{
+            return
+        }
         let goalType = arguments["goal"] as! Int
         let goal = ARCoachingOverlayView.Goal(rawValue: goalType)!
 
@@ -22,6 +25,9 @@ extension FlutterArkitView: ARCoachingOverlayViewDelegate {
     }
 
     func removeCoachingOverlay() {
+        guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let view = sceneView.subviews.first(where: { $0 is ARCoachingOverlayView }) {
             view.removeFromSuperview()
         }

@@ -39,7 +39,9 @@ extension SCNVector3 {
 
 extension FlutterArkitView {
     func initalize(_ arguments: [String: Any], _: FlutterResult) {
-        
+        guard let sceneView = viewController?.sceneView else{
+            return
+        }
         let lightNode = SCNNode()
         lightNode.light = SCNLight()
         lightNode.light?.type = .directional
@@ -56,7 +58,7 @@ extension FlutterArkitView {
             sceneView.autoenablesDefaultLighting = autoenablesDefaultLighting
         }
 
-        if let forceUserTapOnCenter = arguments["forceUserTapOnCenter"] as? Bool {
+        if let forceUserTapOnCenter = arguments["f/Users/shreeshantprajapati/Documents/PluginsorceUserTapOnCenter"] as? Bool {
             forceTapOnCenter = forceUserTapOnCenter
         }
 

@@ -36,12 +36,17 @@ class RGBStreamProcessor {
             .cacheIntermediates: false
         ])
     }()
-    
+    init() {
+        print("RGBStreamProcessor initialized")
+
+    }
     private struct StreamSettings {
         static let scale: CGFloat = 0.3
         static let jpegQuality: CGFloat = 0.35
         static let rotation: CGFloat = -.pi / 2
     }
+    
+    
 
     func setEventSink(_ sink: FlutterEventSink?) {
         if let sink = sink {

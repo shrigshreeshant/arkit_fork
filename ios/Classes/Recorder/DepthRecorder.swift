@@ -21,6 +21,10 @@ class DepthRecorder: Recorder {
     private var fileHandle: FileHandle? = nil
     private var fileUrl: URL? = nil
     private var compressedFileUrl: URL? = nil
+    init() {
+        print("DepthRecorder initialized")
+
+    }
     deinit{
         print("DepthRecorder deinitialized")
     }

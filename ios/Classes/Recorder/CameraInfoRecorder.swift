@@ -46,7 +46,10 @@ class CameraInfoRecorder: Recorder {
     private var fileUrl: URL? = nil
     
     private var count: Int32 = 0
-    
+    init() {
+        print("CameraInfoRecorder initialized")
+
+    }
     deinit{
         print("CameraInfoRecorder deinitialized")
     }

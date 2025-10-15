@@ -3,7 +3,9 @@ import ARKit
 extension FlutterArkitView {
     func onAddNode(_ arguments: [String: Any]) {
         
-        
+        guard let sceneView = viewController?.sceneView else{
+            return
+        }
         let geometryArguments = arguments["geometry"] as? [String: Any]
         let geometry = createGeometry(geometryArguments, withDevice: sceneView.device)
         let node = createNode(
@@ -70,6 +72,9 @@ extension FlutterArkitView {
     
 
     func onUpdateNodes(_ arguments: [String: Any]) {
+        guard let sceneView = viewController?.sceneView else{
+            return
+        }
         print("Entering onUpdateNode")
         // Extract node name
         guard let nodeNames = arguments["nodeName"] as? [String] else {
@@ -233,6 +238,9 @@ extension FlutterArkitView {
 
 
     func onRemoveNode(_ arguments: [String: Any]) {
+        guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let nodeName = arguments["nodeName"] as? String else {
             logPluginError("nodeName deserialization failed", toChannel: channel)
             return
@@ -285,6 +293,9 @@ extension FlutterArkitView {
 //    }
 
     func onRemoveAnchor(_ arguments: [String: Any]) {
+        guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let anchorIdentifier = arguments["anchorIdentifier"] as? String else {
             logPluginError("anchorIdentifier deserialization failed", toChannel: channel)
             return
@@ -297,6 +308,9 @@ extension FlutterArkitView {
     }
 
     func onGetNodeBoundingBox(_ arguments: [String: Any], _ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let name = arguments["name"] as? String
         else {
             logPluginError("name not found: failed", toChannel: channel)
@@ -313,6 +327,9 @@ extension FlutterArkitView {
     }
 
     func onTransformChanged(_ arguments: [String: Any]) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let name = arguments["name"] as? String,
             let params = arguments["transformation"] as? [NSNumber]
         else {
@@ -327,6 +344,9 @@ extension FlutterArkitView {
     }
 
     func onIsHiddenChanged(_ arguments: [String: Any]) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let name = arguments["name"] as? String,
             let params = arguments["isHidden"] as? Bool
         else {
@@ -341,6 +361,9 @@ extension FlutterArkitView {
     }
 
     func onUpdateSingleProperty(_ arguments: [String: Any]) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let name = arguments["name"] as? String,
             let args = arguments["property"] as? [String: Any],
             let propertyName = args["propertyName"] as? String,
@@ -363,6 +386,9 @@ extension FlutterArkitView {
     }
 
     func onUpdateMaterials(_ arguments: [String: Any]) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let name = arguments["name"] as? String,
             let rawMaterials = arguments["materials"] as? [[String: Any]]
         else {
@@ -403,6 +429,9 @@ extension FlutterArkitView {
     }
 
     func onPerformHitTest(_ arguments: [String: Any], _ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let x = arguments["x"] as? Double,
             let y = arguments["y"] as? Double
         else {
@@ -418,6 +447,9 @@ extension FlutterArkitView {
     }
 
     func onPerformARRaycastHitTest(_ arguments: [String: Any], _ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let x = arguments["x"] as? Double,
             let y = arguments["y"] as? Double
         else {
@@ -434,6 +466,9 @@ extension FlutterArkitView {
     }
 
     func onGetLightEstimate(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         let frame = sceneView.session.currentFrame
         if let lightEstimate = frame?.lightEstimate {
             let res = [
@@ -447,6 +482,9 @@ extension FlutterArkitView {
     }
 
     func onProjectPoint(_ arguments: [String: Any], _ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let rawPoint = arguments["point"] as? [Double] else {
             logPluginError("deserialization failed", toChannel: channel)
             result(nil)
@@ -459,6 +497,9 @@ extension FlutterArkitView {
     }
 
     func onCameraProjectionMatrix(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame = sceneView.session.currentFrame {
             let matrix = serializeMatrix(frame.camera.projectionMatrix)
             result(matrix)
@@ -468,6 +509,9 @@ extension FlutterArkitView {
     }
 
     func onCameraViewMatrix(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame = sceneView.session.currentFrame {
 
             let matrix = serializeMatrix(frame.camera.viewMatrix(for: .portrait))
@@ -478,6 +522,9 @@ extension FlutterArkitView {
     }
 
     func onCameraTransform(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame = sceneView.session.currentFrame {
             let matrix = serializeMatrix(frame.camera.transform)
             result(matrix)
@@ -487,6 +534,9 @@ extension FlutterArkitView {
     }
 
     func onPointOfViewTransform(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let pointOfView = sceneView.pointOfView {
             let matrix = serializeMatrix(pointOfView.simdWorldTransform)
             result(matrix)
@@ -496,6 +546,9 @@ extension FlutterArkitView {
     }
 
     func onPlayAnimation(_ arguments: [String: Any]) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let key = arguments["key"] as? String,
             let sceneName = arguments["sceneName"] as? String,
             let animationIdentifier = arguments["animationIdentifier"] as? String
@@ -519,6 +572,9 @@ extension FlutterArkitView {
     }
 
     func onStopAnimation(_ arguments: [String: Any]) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         guard let key = arguments["key"] as? String else {
             logPluginError("deserialization failed", toChannel: channel)
             return
@@ -527,6 +583,9 @@ extension FlutterArkitView {
     }
 
     func onCameraEulerAngles(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame = sceneView.session.currentFrame {
             let res = serializeArray(frame.camera.eulerAngles)
             result(res)
@@ -536,6 +595,9 @@ extension FlutterArkitView {
     }
 
     func onCameraIntrinsics(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame = sceneView.session.currentFrame {
             let res = serializeMatrix3x3(frame.camera.intrinsics)
             result(res)
@@ -545,6 +607,9 @@ extension FlutterArkitView {
     }
 
     func onCameraImageResolution(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame = sceneView.session.currentFrame {
             let res = serializeSize(frame.camera.imageResolution)
             result(res)
@@ -554,6 +619,9 @@ extension FlutterArkitView {
     }
 
     func onCameraCapturedImage(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame = sceneView.session.currentFrame {
             if let bytes = UIImage(ciImage: CIImage(cvPixelBuffer: frame.capturedImage)).pngData() {
                 let res = FlutterStandardTypedData(bytes: bytes)
@@ -567,6 +635,9 @@ extension FlutterArkitView {
     }
 
     func onGetSnapshot(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         let snapshotImage = sceneView.snapshot()
         if let bytes = snapshotImage.pngData() {
             let data = FlutterStandardTypedData(bytes: bytes)
@@ -580,6 +651,9 @@ extension FlutterArkitView {
 
     func onGetSnapshotWithDepthData(_ result: FlutterResult) {
         if #available(iOS 14.0, *) {
+            guard let sceneView = viewController?.sceneView else{
+                return
+            }
             if let currentFrame = sceneView.session.currentFrame,
                 let depthData = currentFrame.sceneDepth
             {
@@ -646,6 +720,9 @@ extension FlutterArkitView {
     }
 
     func onGetCameraPosition(_ result: FlutterResult) {
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         if let frame: ARFrame = sceneView.session.currentFrame {
             let cameraPosition = frame.camera.transform.columns.3
             let res = serializeArray(cameraPosition)
@@ -676,8 +753,9 @@ extension FlutterArkitView {
     
 #if !DISABLE_TRUEDEPTH_API
     func toggleCamera() {
-        
-        
+          guard let sceneView = viewController?.sceneView else{
+            return
+        }
         enableSelfie = !enableSelfie
         if enableSelfie {
             

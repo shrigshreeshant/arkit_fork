@@ -45,7 +45,7 @@ public class SwiftArkitPlugin: NSObject, FlutterPlugin {
 }
 
 class FlutterArkitFactory: NSObject, FlutterPlatformViewFactory {
-    private var arView: FlutterArkitView? = nil
+    
     let messenger: FlutterBinaryMessenger
 
     init(messenger: FlutterBinaryMessenger) {
@@ -53,18 +53,13 @@ class FlutterArkitFactory: NSObject, FlutterPlatformViewFactory {
         self.messenger = messenger
     }
 
-    func create(withFrame frame: CGRect, viewIdentifier viewId: Int64, arguments _: Any?)
+    func create(withFrame frame: CGRect, viewIdentifier viewId: Int64, arguments args: Any?)
         -> FlutterPlatformView
     {
         print("ARKit Factory: Creating view with ID: \(viewId)")
-        let view = FlutterArkitView(withFrame: frame, viewIdentifier: viewId, messenger: messenger)
-        arView = view
+        let view = FlutterArkitView(frame:frame, viewIdentifier: viewId,arguments:args, binaryMessenger: messenger)
         print("ARKit Factory: View created successfully")
         return view
-    }
-
-    func getView() -> FlutterArkitView? {
-        return arView
     }
 
 }
@@ -72,7 +67,7 @@ class FlutterArkitFactory: NSObject, FlutterPlatformViewFactory {
 class CameraStreamHandler: NSObject, FlutterStreamHandler {
 
     private var eventSink: FlutterEventSink?
-    private var arRecordingManager: ARCameraRecordingManager?
+    private weak var arRecordingManager: ARCameraRecordingManager?
 
     var lastFrameTime = Date()
     let minFrameInterval: TimeInterval = 1.0 / 15.0
@@ -80,7 +75,7 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
     init(arRecordingManager: ARCameraRecordingManager) {
         self.arRecordingManager = arRecordingManager
         super.init()
-        print("CameraStreamHandler: Initializing")
+        print("CameraStreamHandler: initialized")
 
     }
 
@@ -94,9 +89,18 @@ class CameraStreamHandler: NSObject, FlutterStreamHandler {
     }
 
     func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        arRecordingManager=nil
 
         eventSink = nil
         return nil
+    }
+    
+    deinit{
+        print("CameraStreamHandler: deinitialized")
+
+        arRecordingManager=nil
+        eventSink = nil
+        
     }
 
 }

@@ -28,6 +28,8 @@ class RGBRecorder: NSObject, Recorder {
     init(videoSettings: [String: Any], queueLabel: String) {
         self.videoSettings = videoSettings
         self.rgbRecorderQueue = DispatchQueue(label: queueLabel)
+        print("RGBRecorder initialized")
+
     }
     
     deinit{

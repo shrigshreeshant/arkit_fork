@@ -21,7 +21,10 @@ class ConfidenceMapRecorder: Recorder {
     private var compressedFileUrl: URL? = nil
     
     private var count: Int32 = 0
-    
+    init() {
+        print("ConfidenceMapRecorder initialized")
+
+    }
     deinit{
         print("ConfidenceMapRecorder deinitialized")
     }

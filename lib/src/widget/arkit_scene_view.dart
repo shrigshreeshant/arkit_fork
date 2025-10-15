@@ -246,26 +246,28 @@ class ARKitController {
   ) {
     _channel = MethodChannel('arkit_$id');
     _channel.setMethodCallHandler(_platformCallHandler);
-    _channel.invokeMethod<void>('init', {
-      'configuration': configuration.index,
-      'environmentTexturing': environmentTexturing.index,
-      'showStatistics': showStatistics,
-      'autoenablesDefaultLighting': autoenablesDefaultLighting,
-      'enableTapRecognizer': enableTapRecognizer,
-      'enableARRaycastTapRecognizer': enableARRaycastTapRecognizer,
-      'enablePinchRecognizer': enablePinchRecognizer,
-      'enablePanRecognizer': enablePanRecognizer,
-      'enableRotationRecognizer': enableRotationRecognizer,
-      'planeDetection': planeDetection.index,
-      'showFeaturePoints': showFeaturePoints,
-      'showWorldOrigin': showWorldOrigin,
-      'detectionImagesGroupName': detectionImagesGroupName,
-      'detectionImages': detectionImages?.map((i) => i.toJson()).toList(),
-      'trackingImagesGroupName': trackingImagesGroupName,
-      'trackingImages': trackingImages?.map((i) => i.toJson()).toList(),
-      'forceUserTapOnCenter': forceUserTapOnCenter,
-      'worldAlignment': worldAlignment.index,
-      'maximumNumberOfTrackedImages': maximumNumberOfTrackedImages,
+    _initialized.future.then((_) {
+      _channel.invokeMethod<void>('init', {
+        'configuration': configuration.index,
+        'environmentTexturing': environmentTexturing.index,
+        'showStatistics': showStatistics,
+        'autoenablesDefaultLighting': autoenablesDefaultLighting,
+        'enableTapRecognizer': enableTapRecognizer,
+        'enableARRaycastTapRecognizer': enableARRaycastTapRecognizer,
+        'enablePinchRecognizer': enablePinchRecognizer,
+        'enablePanRecognizer': enablePanRecognizer,
+        'enableRotationRecognizer': enableRotationRecognizer,
+        'planeDetection': planeDetection.index,
+        'showFeaturePoints': showFeaturePoints,
+        'showWorldOrigin': showWorldOrigin,
+        'detectionImagesGroupName': detectionImagesGroupName,
+        'detectionImages': detectionImages?.map((i) => i.toJson()).toList(),
+        'trackingImagesGroupName': trackingImagesGroupName,
+        'trackingImages': trackingImages?.map((i) => i.toJson()).toList(),
+        'forceUserTapOnCenter': forceUserTapOnCenter,
+        'worldAlignment': worldAlignment.index,
+        'maximumNumberOfTrackedImages': maximumNumberOfTrackedImages,
+      });
     });
   }
 
@@ -328,6 +330,8 @@ class ARKitController {
   static const _materialsConverter = ListMaterialsValueNotifierConverter();
   static const _stateConverter = ARTrackingStateConverter();
   static const _stateReasonConverter = ARTrackingStateReasonConverter();
+
+  final Completer<void> _initialized = Completer<void>();
 
   void dispose() {
     _channel.invokeMethod<void>('dispose');
@@ -727,7 +731,8 @@ class ARKitController {
         case 'coachingOverlayViewDidDeactivate':
           coachingOverlayViewDidDeactivate?.call();
           break;
-
+        case 'onViewInitialized':
+          if (!_initialized.isCompleted) _initialized.complete();
         default:
           if (debug) {
             debugPrint('Unknowm method ${call.method} ');

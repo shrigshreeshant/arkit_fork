@@ -26,6 +26,10 @@ class FrameBufferPool {
         self.tag = tag
         print("\(tag) Initialized with capacity \(capacity)")
     }
+    deinit{
+        
+        print("\(tag) deInitialized")
+    }
     
     func store(frameNumber: Int, pixelBuffer: CVPixelBuffer, timestamp: CMTime,depthBuffer: CVPixelBuffer?,confidenceBuffer: CVPixelBuffer?,cameraInfo: CameraInfo?) {
         buffer[frameNumber] = Frame(number: frameNumber, pixelBuffer: pixelBuffer, timestamp: timestamp,depthBuffer: depthBuffer,confidenceBuffer: confidenceBuffer,cameraInfo: cameraInfo)
