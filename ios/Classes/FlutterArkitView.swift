@@ -49,14 +49,11 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
            print("FlutterArkitView initialized")
       }
 
-
-    
     deinit{
         performDisposal()
         print("FlutterArkitView deinitialized")
         
     }
-
     func view() -> UIView { return _view }
     
     private func showLoadingState() {
@@ -272,9 +269,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             }
       
             toggleTorch(toggle)
-           
-            
-            
+
         case "selfie":
             #if !DISABLE_TRUEDEPTH_API
                 toggleCamera()
@@ -304,8 +299,6 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
                 
               }
             result(id)
-  
-
             },isArEnabled: isArEnabled
 )
  
@@ -313,9 +306,6 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             guard let rm=viewController?.recordingManager else{return}
 
             rm.recordGoodFrames(arguments!)
-
-        
-
 
         default:
             result(FlutterMethodNotImplemented)

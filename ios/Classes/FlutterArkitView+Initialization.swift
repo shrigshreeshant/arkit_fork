@@ -73,11 +73,6 @@ extension FlutterArkitView {
             return
         }
         configuration?.videoFormat = videoforamt
-       
-     
-      
-  
-        
         if configuration != nil {
             print("FlutterArkitView: Running ARSession with configuration")
             sceneView.session.run(configuration!)

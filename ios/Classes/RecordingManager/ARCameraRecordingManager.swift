@@ -612,13 +612,18 @@ extension ARCameraRecordingManager {
 
         // Process each frame
         for frame in frameList {
+            
+            if(numRgbFrames>180){
+                return
+            }
             // Remove from pool if needed
             frameBufferPool.remove(frameNumber: frame.number)
 
             // Update RGB video recorder
             self.goodWindowRgbVIdeoRecorder?.update(frame.pixelBuffer, timestamp: frame.timestamp)
             self.numRgbFrames += 1
-
+          
+          
             // Update depth buffer if available
             if let depthBuffer = frame.depthBuffer {
                 self.depthRecorder.update(depthBuffer, timestamp: frame.timestamp)
