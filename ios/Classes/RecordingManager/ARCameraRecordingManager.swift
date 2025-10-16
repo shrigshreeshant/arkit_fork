@@ -163,39 +163,13 @@ class ARCameraRecordingManager: NSObject {
         
     }
 
-    private func find4by3VideoFormat() -> ARConfiguration.VideoFormat? {
-        let availableFormats = ARWorldTrackingConfiguration.supportedVideoFormats
-//        if #available(iOS 16.0, *) {
-//            if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth)  {
-//                let format = ARWorldTrackingConfiguration.recommendedVideoFormatFor4KResolution
-//                let resolution = format?.imageResolution
-//                let fps = format?.framesPerSecond
-//                guard let resolution = resolution else{ return nil}
-//                print("✅ Recommended 4K format: \(Int(resolution.width))x\(Int(resolution.height)) @ \(fps) FPS")
-//                return format
-//            }
-//        }
-        for format in availableFormats {
-            let resolution = format.imageResolution
-            if resolution.width / 16 == resolution.height / 9 {
-                print("Using video format: \(format)")
-                return format
-            }
-        }
-        return nil
-    }
-    
-    
-    
-    
-    
        private func configureSession() {
         
         let configuration = ARWorldTrackingConfiguration()
         
 
         // Optionally, set the video format if available
-        if let format = find4by3VideoFormat() {
+        if let format = ARWorldTrackingConfiguration.getAppropriateVideoFormat() {
             configuration.videoFormat = format
         } else {
             print("No 4:3 video format is available")

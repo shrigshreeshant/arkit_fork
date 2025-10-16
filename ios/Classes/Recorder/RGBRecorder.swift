@@ -113,7 +113,7 @@ class RGBRecorder: NSObject, Recorder {
                         print("Waiting for assetWriter...")
                         usleep(10)
                     }
-                    let processBuffer = ImageUtils.processPixelBuffer(buffer)
+                   
                     
                     var presentationTime: CMTime
                     if self.isRegularvideo {
@@ -125,12 +125,11 @@ class RGBRecorder: NSObject, Recorder {
                              
                           }
                     
-                    adaptor.append(self.isRegularvideo ? processBuffer! : buffer, withPresentationTime: presentationTime)
+                    adaptor.append(buffer, withPresentationTime: presentationTime)
                 }
                 
             } else if assetWriter.status == .writing {
                 if let adaptor = self.assetWriterInputPixelBufferAdaptor, adaptor.assetWriterInput.isReadyForMoreMediaData {
-                    let processBuffer = ImageUtils.processPixelBuffer(buffer)
                     var presentationTime: CMTime
                     if self.isRegularvideo {
                         presentationTime = timestamp
